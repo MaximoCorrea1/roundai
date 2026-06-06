@@ -28,3 +28,20 @@ export function savingsCapacity(profile: UserProfile): number {
   if (xs.length === 0) return 0
   return xs.reduce((a, b) => a + b, 0) / xs.length
 }
+
+/** Closed risk→margin-fraction table (spec decision #7); unknown risk → moderado. */
+export const RISK_TO_MARGIN = {
+  conservador: 0.03,
+  moderado: 0.07,
+  agresivo: 0.12,
+} as const
+
+/** Validate a margin FRACTION and clamp it to [0.01, 0.20]; rejects percent-style input. */
+export function clampMargin(f: number): number {
+  if (!Number.isFinite(f) || f < 0) throw new ValidationError(`invalid margin fraction: ${f}`)
+  if (f > 1)
+    throw new ValidationError(
+      `margin fraction ${f} > 1 — did you pass percent instead of fraction? (e.g. 0.05, not 5)`,
+    )
+  return Math.min(0.2, Math.max(0.01, f))
+}
