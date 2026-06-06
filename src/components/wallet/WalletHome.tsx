@@ -13,11 +13,8 @@ import { RoundaiTile } from './RoundaiTile'
 // breaks the neutral palette) · scrolling ledger · bottom nav. Everything fits
 // the 393×852 screen with NO vertical overflow; only the ledger scrolls.
 
-// Display-only believable balance (NOT a derived figure — never re-derive money
-// outside the calculator). Formatted inline for now.
-// TODO(phase4): use formatARS from @/lib/roundup (formatters don't exist yet)
-const BALANCE_INICIAL = 326_500
-
+// Balance is owned by the AppShell reducer (so payments can decrement it) and
+// passed in. NOT a derived figure — never re-derive money outside the calculator.
 const ars = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',
@@ -25,8 +22,10 @@ const ars = new Intl.NumberFormat('es-AR', {
 })
 
 export function WalletHome({
+  balance,
   onOpenRoundai,
 }: {
+  balance: number
   onOpenRoundai?: () => void
 }) {
   const profile = activeProfile()
@@ -77,7 +76,7 @@ export function WalletHome({
 
         {/* balance */}
         <div className="shrink-0">
-          <BalanceCard label={w.balanceLabel} amount={ars.format(BALANCE_INICIAL)} />
+          <BalanceCard label={w.balanceLabel} amount={ars.format(balance)} />
         </div>
 
         {/* action row */}

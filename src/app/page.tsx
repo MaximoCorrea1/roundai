@@ -1,5 +1,5 @@
 import { PhoneFrame } from '@/components/phone/PhoneFrame'
-import { WalletHome } from '@/components/wallet/WalletHome'
+import { AppShell } from '@/components/AppShell'
 
 // The browser canvas AROUND the phone — the only place (with the RoundaiTile)
 // where the roundai brand appears in Phase 1. Deep green field with atmosphere:
@@ -48,7 +48,7 @@ export default function Home() {
 
       {/* the device */}
       <PhoneFrame>
-        <WalletHome />
+        <AppShell />
       </PhoneFrame>
 
       {/* footer hairline — quiet B2B framing, bottom-right */}
