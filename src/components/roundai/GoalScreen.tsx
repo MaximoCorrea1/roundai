@@ -43,6 +43,9 @@ export function GoalScreen({ state }: { state: AppState }) {
   const baseSweep = monthlySweepTotal(ledger, margin) // simulated prior month
   const accumulated = baseSweep + state.goalProgress // + live in-session sweeps
   const rendimiento = simulateReturns(baseSweep, 1).rendimiento
+  // Displayed as a conditional 12-month projection ("rendiría") — NOT added to
+  // the ring/remaining math, which only counts accrued (honest) amounts.
+  const rendimiento12m = simulateReturns(baseSweep, 12).rendimiento
   const ringValue = accumulated + rendimiento
 
   const goalAmount = hasTarget ? goal!.amount! : 0
@@ -70,7 +73,7 @@ export function GoalScreen({ state }: { state: AppState }) {
       {/* this-month accumulated label + live yield */}
       <div className="mt-5 grid grid-cols-2 gap-2.5">
         <Stat value={formatARS(accumulated)} label={strings.goal.accumulatedLabel} />
-        <Stat value={formatARS(rendimiento)} label={stripAmountToken(strings.goal.yield)} />
+        <Stat value={`~${formatARS(rendimiento12m)}`} label={strings.goal.yieldLabel12m} />
       </div>
 
       {/* pace — only with a concrete target */}

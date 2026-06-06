@@ -84,6 +84,9 @@ export const strings = {
     remaining: 'estás a {monto} de tu meta',
     reached: '¡Llegaste a tu meta! ✦',
     yield: 'tu plata rindió {monto} ✦ simulado',
+    // 12-month PROJECTION (conditional tense — never a promise): a just-activated
+    // account has $0 accrued, which is honest but reads dead in the demo.
+    yieldLabel12m: 'rendiría en 12 meses ✦ simulado',
     pace: 'a este ritmo: {meses} meses',
     sandbox: 'fondos simulados — sandbox',
     portfolioTitle: 'Tu plata, invertida',
