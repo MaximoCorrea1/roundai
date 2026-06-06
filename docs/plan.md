@@ -532,3 +532,46 @@ fetch('/api/chat', {
 - **No placeholders:** the only deliberate TBDs are Phase-7 demo prompts (depend on built product) and final design-token values (frontend-design decision at build time, recorded in `design.md`).
 - **Type consistency:** `UserProfile`/`RiskProfile`/`ValidationError` live in `src/lib/roundup.ts` (types stubbed in Task 1.3, implementations added in Phase 3); `ChatMessage`/`Goal` defined in Task 2.1; all reused verbatim in Tasks 4.x/5.x.
 - **Adversarial review applied (2026-06-06):** a 3-lens review found 2 blockers (demo-transcript created after its importers; assistant-first seeded history would 400 against the Anthropic API) + 18 lesser findings — all fixed in this revision.
+
+---
+
+## Phase 8 — Iteration 2 (spec decisions #25–#34; Maximo feedback 2026-06-06)
+
+Waves are dependency-ordered; each gets implementer + review. Demo-script numbers re-derived at the end.
+
+### Task 8.A: Math + data foundation (TDD — failing test first per function)
+**Files:** `src/lib/roundup.ts` + `.test.ts`, `src/lib/chat-types.ts`, `src/data/profiles.ts`
+- [ ] `trendOf(series: number[]): { direction: 'sube' | 'estable' | 'baja'; pct: number }` — avg(last 3) vs avg(first 3); |Δ| < 3% → estable; pct = relative change. Tests: rising/falling/flat/short series
+- [ ] `planGoal(profile, risk: RiskProfile, amount: number, months: number)` → `{ status: 'comodo' | 'ajustado' | 'inviable'; marginFraction; monthly; monthsAtMargin }` — required = amount/months (months int ≥ 1 else ValidationError); capacityCap = capacity/gasto; riskCap = RISK_TO_MARGIN[risk]; comodo: required/gasto ≤ min(both) → margin = clamp(max(required/gasto, 0.01)); ajustado: ≤ capacityCap but > riskCap → margin = riskCap, monthsAtMargin recomputed; inviable: > capacityCap → margin = clamp(min(capacityCap, 0.20)), monthsAtMargin at that margin. Tests: the three mati cases ($500k/12m → 3,5% comodo; $500k/6m → ajustado 7% → 7 meses; $1M/3m → inviable, best ≈ 0.0918 → 10 meses) + floors
+- [ ] chat-types: `Goal` gains `months?: number`; add `SavedGoal { id, label, amount, months, accumulated }`
+- [ ] profiles: add `gastoMensualHist: number[6]` per profile (last entry === gastoMensual — ledger discipline holds); choose histories giving mati gasto "sube leve", liquidez "estable"
+
+### Task 8.B: Onboarding flow v2 + coach/transcript sync *(frontend-design)*
+**Files:** AppShell, ChatScreen, OptionButtons, AmountInput (+ new QuizStep, TimelineStep, MarginTweaker), strings.ts, proposal.ts, coach.ts, demo-transcript.ts
+- [ ] New chatPhases: `quiz` (3 chip questions → session riskProfile, "Por regulación tu perfil lo definís vos") → goalSelect → goalInput → `timeline` (chips 6/12/24 + custom months) → proposal
+- [ ] Proposal v2 via planGoal: tri-state copy; tendencies line from trendOf(liquidez)+trendOf(gastoHist); margin rendered as TAPPABLE chip → MarginTweaker (stepper [1%, sustainable max], live contribution/months/café-sweep/sustainability bar) → accept commits margin
+- [ ] State: `goals: SavedGoal[]`, `activeGoalId`, `riskProfile` (quiz result), `roundupEnabled: boolean` (default true) + actions; ACCEPT_PROPOSAL creates the SavedGoal
+- [ ] Copy diet pass: greeting 2 bubbles, every bubble ≤ 2 lines
+- [ ] coach.ts: inject quiz-set risk, timeline, plan status + margin mechanics; demoReplyFor takes session margin
+
+### Task 8.C: Payment sheet v2 *(frontend-design; after 8.B lands)*
+**Files:** PaymentSheet, PaymentSuccess, strings.ts (additive)
+- [ ] Round-up toggle on sheet (uses `roundupEnabled`, TOGGLE_ROUNDUP) — split recomputes live; OFF → plain payment (the toggle replaces the static counterfactual)
+- [ ] "A dónde va": FCI {perfil} · simulado + micro-projection of this sweep at 12m (simulateReturns, "rendiría")
+- [ ] Success screen: tighter, split-first hierarchy
+
+### Task 8.D: Goal page v2 *(frontend-design; after 8.B lands; parallel-safe with 8.C)*
+**Files:** GoalScreen, ProgressRing, PortfolioCard, RecalcNote (+ GoalList/Holdings components), strings.ts (additive)
+- [ ] Goals list: active goal hero (ring + milestones 25/50/75) + secondary goals as compact cards (own mocked progress); selector sets activeGoalId (sweeps follow)
+- [ ] Holdings: aportado / rendimiento simulado / total breakdown; streak chip (mocked "1 mes")
+- [ ] Keep every number calculator-derived and hand-checkable
+
+### Task 8.E: Judge affordances + polish *(after 8.C/8.D)*
+**Files:** page.tsx backdrop, new DemoCues + ProfileSwitcher (backdrop layer), AppShell (reset on switch)
+- [ ] Pulse-dot cue sequence: roundai tile → goal chips → timeline → activar → Pagar → Mi meta (advances with state; dismissible)
+- [ ] "perfil demo: Mati ▾" backdrop switcher (mati/lu/fede) — resets session state
+- [ ] Whole-app copy/spacing polish pass
+
+### Task 8.F: Re-derive demo script + final review
+- [ ] Re-run demo numbers with the timeline flow (pick the rehearsal plazo), update docs/demo-script.md beats/prompts
+- [ ] Final adversarial review (demo-truth audit, regression, judge-poke) → fix → green

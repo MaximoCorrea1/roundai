@@ -158,6 +158,21 @@ Kickoff Phases 0→5 with two adjustments: (a) Phase 0 adds git init + throwaway
 `/api/health`; (b) the pure module (kickoff Phase 5a) moves before the live API wiring (Phase 4)
 because proposal templating and prompt injection depend on it. Full breakdown: `docs/plan.md`.
 
+## Iteration 2 (2026-06-06, post-Phase-6 — Maximo's UX/precision feedback)
+
+| # | Decision | Choice | Why |
+|---|----------|--------|-----|
+| 25 | Timeline-first onboarding | Flow: goal → amount → **plazo** (chips 6/12/24 meses + custom) → margin COMPUTED from the timeline via `planGoal(profile, risk, amount, months)` → tri-state feasibility: `comodo` (required ≤ caps) / `ajustado` (fits capacity but exceeds risk-profile cap — offer longer plazo or profile change) / `inviable` (required > savings capacity — honest copy + best achievable timeline). `months ≥ 1` hard floor | The margin was an opaque output; deriving it from the user's deadline makes it explainable, and infeasible goals get caught by math, not vibes ("no llegás a $100.000 en un día") |
+| 26 | Investor-profile quiz (regulatory) | 3-question chip quiz BEFORE the proposal sets session `riskProfile` — explicitly NOT AI-inferred ("Por regulación, tu perfil inversor lo definís vos"). Result caps margin via `RISK_TO_MARGIN` | Suitability profiling can't legally be inferred; doing it visibly is a judge-facing compliance differentiator |
+| 27 | Interactive margin | The margin in the proposal is a tappable chip → inline tweaker (stepper/slider over [1%, sustainable max]) live-recomputing contribution, months, café-sweep and a sustainability bar; accepting commits the tweaked margin | "Tap it to tweak or understand it" — consent becomes informed, and it's a demo moment |
+| 28 | Tendencies (until Maximo's dataset lands) | Profiles gain `gastoMensualHist[6]`; `trendOf(series)` (avg last-3 vs first-3 → sube/estable/baja + pct) powers precise proposal copy from liquidez + gasto histories. Swap-in point for the real mock dataset | "Vague" copy → data-grounded copy; single ingestion point for the promised dataset |
+| 29 | Multi-goal | `goals[]` in state; exactly ONE active goal receives sweeps (selector on the goal page); secondary goals carry their own mocked progress. Sweeps are never split | Multiple goals demoable while the sweep math stays exact and hand-checkable |
+| 30 | Holdings + gamification | Goal page v2: position breakdown (aportado / rendimiento simulado / total) per FCI level, ring milestones at 25/50/75%, monthly streak chip (mocked) | "Your holdings, returns, progress — gamify a little" without breaking the sandbox honesty |
+| 31 | Payment sheet v2 | Round-up ON/OFF toggle on the sheet live-recomputing the split (the toggle IS the counterfactual), "a dónde va" line (FCI {perfil} · simulado), micro-projection of the sweep; tightened success screen | Better-shown investing + the enable/disable control Maximo asked for |
+| 32 | Judge affordances | Backdrop layer (outside the phone): subtle lime pulse-dot cue on the next demo action + "perfil demo: Mati ▾" switcher (mati/lu/fede, resets session) | Judges self-navigate; the in-phone product stays clean of demo chrome |
+| 33 | Copy diet | Bubbles ≤ 2 lines, greeting 2 bubbles max, numbers over words everywhere | "Reduce text bloat. more signal" |
+| 34 | Canned-transcript parity | `demoReplyFor` parameterized by the SESSION margin (post-tweak), not a recomputed default | Fallback must echo whatever margin the user consented to |
+
 ### Out of scope (roadmap, not MVP)
 
 Real integrations (broker/PSAV/payments/DB), auth, persistence, real returns, regulatory
