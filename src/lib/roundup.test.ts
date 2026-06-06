@@ -9,6 +9,7 @@ import {
   liquidityBand,
   monthlyContribution,
   monthsToGoal,
+  simulateReturns,
   RISK_TO_MARGIN,
   clampMargin,
   savingsCapacity,
@@ -136,5 +137,27 @@ describe('liquidityBand', () => {
   })
   test('fede ratio ≈ 0.265 → alta', () => {
     expect(liquidityBand(fede)).toBe('alta')
+  })
+})
+
+describe('simulateReturns', () => {
+  test('months 0 → all zeros', () => {
+    expect(simulateReturns(82_600, 0)).toEqual({ aportado: 0, rendimiento: 0, total: 0 })
+  })
+  test('contribution 82.600 over 7 months: positive rendimiento, total = aportado + rendimiento', () => {
+    const r = simulateReturns(82_600, 7)
+    expect(r.aportado).toBe(82_600 * 7)
+    expect(r.rendimiento).toBeGreaterThan(0)
+    expect(r.total).toBe(r.aportado + r.rendimiento)
+  })
+  test('total exceeds aportado for months ≥ 2', () => {
+    const r = simulateReturns(50_000, 2)
+    expect(r.total).toBeGreaterThan(r.aportado)
+  })
+  test('negative contribution → ValidationError', () => {
+    expect(() => simulateReturns(-1, 5)).toThrow(ValidationError)
+  })
+  test('negative months → ValidationError', () => {
+    expect(() => simulateReturns(50_000, -1)).toThrow(ValidationError)
   })
 })

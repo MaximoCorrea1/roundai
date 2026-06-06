@@ -4,6 +4,8 @@
 // Phase 1: type declarations only. Implementations land in Phase 3 via TDD —
 // do NOT add functions here without a failing test first (see docs/plan.md §Phase 3).
 
+import { TNA_SIMULADA } from './config'
+
 export type RiskProfile = 'conservador' | 'moderado' | 'agresivo'
 
 export interface UserProfile {
@@ -99,4 +101,17 @@ export function liquidityBand(profile: UserProfile): 'baja' | 'media' | 'alta' {
   if (ratio < 0.05) return 'baja'
   if (ratio < 0.25) return 'media'
   return 'alta'
+}
+
+/** Simulated growth of end-of-month contributions at TNA_SIMULADA (annuity); always labeled "simulado" in UI. */
+export function simulateReturns(
+  contribution: number,
+  months: number,
+): { aportado: number; rendimiento: number; total: number } {
+  if (contribution < 0 || months < 0)
+    throw new ValidationError(`negative input: contribution=${contribution}, months=${months}`)
+  const aportado = contribution * months
+  const r = TNA_SIMULADA / 12
+  const total = months === 0 ? aportado : Math.round(contribution * (((1 + r) ** months - 1) / r))
+  return { aportado, rendimiento: total - aportado, total }
 }
