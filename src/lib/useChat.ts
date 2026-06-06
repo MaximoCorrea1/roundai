@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useRef, type Dispatch } from 'react'
 import type { AppState, Action } from '@/components/AppShell'
 import type { ChatMessage } from '@/lib/chat-types'
-import { ACTIVE_PROFILE_ID, profiles } from '@/data/profiles'
+import { profiles } from '@/data/profiles'
 import { seedHistory } from '@/lib/proposal'
 import { demoReplyFor } from '@/lib/demo-transcript'
 import { MAX_HISTORY, SENTINEL } from '@/lib/config'
@@ -48,7 +48,7 @@ export function useChat(state: AppState, dispatch: Dispatch<Action>) {
       if (!trimmed) return
       if (state.goal == null || state.marginFraction == null) return
 
-      const profile = profiles.find((p) => p.id === ACTIVE_PROFILE_ID)!
+      const profile = profiles.find((p) => p.id === state.profileId)!
       const goal = state.goal
       const margin = state.marginFraction
       // Session risk declared via the quiz (decision #26); moderado fallback.
@@ -116,7 +116,7 @@ export function useChat(state: AppState, dispatch: Dispatch<Action>) {
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
           body: JSON.stringify({
-            profileId: ACTIVE_PROFILE_ID,
+            profileId: state.profileId,
             goal,
             marginFraction: margin,
             risk, // quiz-declared session risk (decision #26) — server whitelists it
@@ -174,7 +174,7 @@ export function useChat(state: AppState, dispatch: Dispatch<Action>) {
         await runFallback()
       }
     },
-    [state.goal, state.marginFraction, state.sessionRisk, state.messages, state.liveStartIndex, dispatch],
+    [state.profileId, state.goal, state.marginFraction, state.sessionRisk, state.messages, state.liveStartIndex, dispatch],
   )
 
   return { sendMessage }

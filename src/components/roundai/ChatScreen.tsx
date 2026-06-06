@@ -3,9 +3,11 @@
 import { useEffect, useState, type Dispatch } from 'react'
 import type { AppState, Action } from '@/components/AppShell'
 import type { GoalType, Goal, SavedGoal } from '@/lib/chat-types'
-import type { RiskProfile } from '@/lib/roundup'
-import { activeProfile } from '@/data/profiles'
+import type { RiskProfile, UserProfile } from '@/lib/roundup'
+import { profiles } from '@/data/profiles'
 import { formatARS, formatPct } from '@/lib/roundup'
+import { useCueActive } from '@/components/AppShell'
+import { CueDot } from '@/components/CueDot'
 import {
   buildProposalMessages,
   buildProposalPlan,
@@ -43,6 +45,11 @@ function sessionRiskOf(state: AppState): RiskProfile {
   return state.sessionRisk ?? 'moderado'
 }
 
+/** The active demo profile (from state.profileId — set by the ?perfil= switcher). */
+function profileOf(state: AppState): UserProfile {
+  return profiles.find((p) => p.id === state.profileId) ?? profiles[0]
+}
+
 export function ChatScreen({
   state,
   dispatch,
@@ -63,7 +70,7 @@ export function ChatScreen({
   useEffect(() => {
     if (!active || state.messages.length > 0 || state.chatPhase !== 'greeting') return
 
-    const profile = activeProfile()
+    const profile = profileOf(state)
     const g = strings.onboarding.greeting
     const bubbles = [g.hola.replace('{nombre}', profile.nombre), g.pregunta]
 
@@ -95,7 +102,7 @@ export function ChatScreen({
   useEffect(() => {
     if (state.chatPhase !== 'proposal' || !state.goal) return
 
-    const profile = activeProfile()
+    const profile = profileOf(state)
     const risk = sessionRiskOf(state)
     const plan = planFor(profile, state.goal, risk)
 
@@ -191,7 +198,7 @@ export function ChatScreen({
     setProposalReady(false)
   }
 
-  const profile = activeProfile()
+  const profile = profileOf(state)
   const risk = sessionRiskOf(state)
   const proposalDone = state.chatPhase === 'proposal' && proposalReady && state.goal != null
   // The committed (post-tweak) margin if positive; 0 = "cleared" sentinel.
@@ -243,7 +250,7 @@ export function ChatScreen({
 
 /** Pick the right plan builder for a goal (target-driven vs open-ended). */
 function planFor(
-  profile: ReturnType<typeof activeProfile>,
+  profile: UserProfile,
   goal: Goal,
   risk: RiskProfile,
   overrideMargin?: number,
@@ -271,7 +278,7 @@ function ProposalBlock({
 }: {
   plan: ProposalPlan
   displayMargin: number
-  profile: ReturnType<typeof activeProfile>
+  profile: UserProfile
   risk: RiskProfile
   amount?: number
   onCommitMargin: (margin: number) => void

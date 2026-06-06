@@ -20,19 +20,24 @@ import { RoundaiTile } from './RoundaiTile'
 // (formatARS is the calculator's es-AR formatter).
 
 export function WalletHome({
+  profileId,
   balance,
   sessionTxns = [],
   onOpenRoundai,
   onPay,
 }: {
+  // The active demo profile (from AppShell state, set by the ?perfil= switcher).
+  profileId: string
   balance: number
   sessionTxns?: SessionTxn[]
   onOpenRoundai?: () => void
   onPay?: () => void
 }) {
-  const profile = activeProfile()
-  const transactions = transactionsFor(ACTIVE_PROFILE_ID)
+  const profile = profiles.find((p) => p.id === profileId) ?? profiles[0]
+  const transactions = transactionsFor(profileId)
   const w = strings.wallet
+  const showTileCue = useCueActive('tile')
+  const showPayCue = useCueActive('pay')
 
   const greeting = w.greeting.replace('{nombre}', profile.nombre)
   const initial = profile.nombre.charAt(0).toUpperCase()

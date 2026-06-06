@@ -11,7 +11,7 @@ import {
   monthsAtRate,
   formatARS,
 } from '@/lib/roundup'
-import { activeProfile, ACTIVE_PROFILE_ID } from '@/data/profiles'
+import { profiles } from '@/data/profiles'
 import { transactionsFor } from '@/data/transactions'
 import { strings } from '@/data/strings'
 import { ProgressRing } from './ProgressRing'
@@ -56,7 +56,7 @@ export function GoalScreen({
   state: AppState
   dispatch: Dispatch<Action>
 }) {
-  const profile = activeProfile()
+  const profile = profiles.find((p) => p.id === state.profileId) ?? profiles[0]
   const margin = state.marginFraction ?? 0
 
   // ── the active goal (post-accept) or the in-flight `state.goal` fallback ──
@@ -70,7 +70,7 @@ export function GoalScreen({
   const hasTarget = goalAmount > 0
 
   // ── all numbers from the calculator ──
-  const ledger = transactionsFor(ACTIVE_PROFILE_ID)
+  const ledger = transactionsFor(state.profileId)
   const baseSweep = monthlySweepTotal(ledger, margin) // simulated prior month (real ledger)
 
   // The base sweep belongs to the REAL goal only. The mocked secondary goal

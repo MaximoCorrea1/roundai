@@ -1,13 +1,48 @@
 import { PhoneFrame } from '@/components/phone/PhoneFrame'
 import { AppShell } from '@/components/AppShell'
+import { ACTIVE_PROFILE_ID } from '@/data/profiles'
+import { strings } from '@/data/strings'
 
 // The browser canvas AROUND the phone — the only place (with the RoundaiTile)
 // where the roundai brand appears in Phase 1. Deep green field with atmosphere:
 // a soft gradient mesh + faint grain so it reads as a designed surface, not a
 // flat fill. The wordmark + pitch line sit in a corner, deliberately NOT
 // competing with the device.
+//
+// This is also the demo-chrome layer (spec decision #32): a querystring profile
+// switcher (?perfil=mati|lu|fede) and a cue master switch (?guia=0). Both are
+// read server-side here and threaded into AppShell — switching is a plain <a>
+// reload, so every switch = a clean session with zero state plumbing.
 
-export default function Home() {
+const PROFILE_IDS = ['mati', 'lu', 'fede'] as const
+type ProfileId = (typeof PROFILE_IDS)[number]
+
+/** Whitelist the ?perfil= value; anything off-list falls back to the locked default. */
+function resolveProfileId(raw: string | string[] | undefined): ProfileId {
+  const v = Array.isArray(raw) ? raw[0] : raw
+  return (PROFILE_IDS as readonly string[]).includes(v ?? '')
+    ? (v as ProfileId)
+    : (ACTIVE_PROFILE_ID as ProfileId)
+}
+
+export default async function Home({
+  searchParams,
+}: {
+  // Next 16: searchParams is async.
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const sp = await searchParams
+  const profileId = resolveProfileId(sp.perfil)
+  // Cue master switch: default ON; ?guia=0 disables every cue in the tree.
+  const cuesEnabled = sp.guia !== '0'
+
+  // Preserve the ?guia= flag across profile switches so a judge running cue-free
+  // doesn't get cues back when they change profile.
+  const profileHref = (id: ProfileId) =>
+    `/?perfil=${id}${cuesEnabled ? '' : '&guia=0'}`
+
+  const d = strings.demo
+
   return (
     <main className="relative flex h-screen w-screen items-center justify-center overflow-hidden bg-roundai-green-deep">
       {/* gradient mesh — warm green glow upper-left, lime hint lower-right */}
@@ -46,10 +81,41 @@ export default function Home() {
         </p>
       </div>
 
-      {/* the device */}
+      {/* the device — re-keyed on profileId so a switch fully remounts the shell */}
       <PhoneFrame>
-        <AppShell />
+        <AppShell key={profileId} profileId={profileId} cuesEnabled={cuesEnabled} />
       </PhoneFrame>
+
+      {/* demo chrome — profile switcher (bottom-left, quiet, clearly NOT product).
+          Plain <a> links so a switch is a full reload = clean session. */}
+      <nav
+        aria-label={d.switcherLabel}
+        className="absolute bottom-[clamp(16px,3vh,40px)] left-[clamp(20px,4vw,64px)] z-10 hidden sm:block"
+      >
+        <p className="mb-1.5 font-display text-[10px] font-medium uppercase tracking-[0.18em] text-cream/35">
+          {d.switcherLabel}
+        </p>
+        <div className="inline-flex items-center gap-1 rounded-full bg-roundai-green-soft/40 p-1 ring-1 ring-cream/[0.06] backdrop-blur-sm">
+          {PROFILE_IDS.map((id) => {
+            const current = id === profileId
+            return (
+              <a
+                key={id}
+                href={profileHref(id)}
+                aria-current={current ? 'page' : undefined}
+                className={
+                  'rounded-full px-3 py-1 text-[12px] font-semibold transition-colors ' +
+                  (current
+                    ? 'bg-lime text-roundai-green-deep'
+                    : 'text-cream/55 hover:text-cream/85')
+                }
+              >
+                {d.profiles[id]}
+              </a>
+            )
+          })}
+        </div>
+      </nav>
 
       {/* footer hairline — quiet B2B framing, bottom-right */}
       <div className="pointer-events-none absolute bottom-[clamp(16px,3vh,40px)] right-[clamp(20px,4vw,64px)] z-10 hidden text-right sm:block">

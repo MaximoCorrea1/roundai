@@ -217,6 +217,21 @@ export const strings = {
       changeGoal: 'Cambiar meta',
     },
   },
+  // Backdrop demo chrome (spec decision #32) — lives OUTSIDE the phone, never in
+  // the product. Profile switcher + the one-word pulse-dot cue hints.
+  demo: {
+    // Profile switcher (querystring ?perfil=). Plain links → full reload = clean
+    // session, so switching never carries stale state across.
+    switcherLabel: 'perfil demo',
+    profiles: { mati: 'Mati', lu: 'Lu', fede: 'Fede' },
+    // Single-word cue labels beside the pulse-dot, by target.
+    cueLabels: {
+      tile: 'tocá',
+      marginChip: 'tocá',
+      pay: 'pagá',
+      goalTab: 'mirá',
+    },
+  },
   // Interactive margin tweaker (decision #27) — the margin chip taps open this.
   tweaker: {
     chipHint: 'tocá para ajustar',

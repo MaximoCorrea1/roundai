@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useReducer, useState } from 'react'
+import { createContext, useContext, useEffect, useReducer, useState } from 'react'
 import type { Goal, ChatMessage, SavedGoal } from '@/lib/chat-types'
 import type { RiskProfile } from '@/lib/roundup'
 import type { Transaction } from '@/data/transactions'
@@ -60,6 +60,12 @@ type ChatPhase =
   | 'live'
 
 export interface AppState {
+  // The active demo profile (spec decision #32). Set once from the ?perfil=
+  // querystring at mount and never mutated — switching profiles is a full page
+  // reload (a fresh AppShell), so this is effectively immutable per session.
+  // Every consumer that used to read ACTIVE_PROFILE_ID / activeProfile() now
+  // reads this instead, so one switcher drives the whole tree.
+  profileId: string
   screen: Screen
   view: MiniView
   chatPhase: ChatPhase
@@ -110,7 +116,15 @@ export type Action =
   | { type: 'CONFIRM_PAYMENT'; tx: Transaction; sweep: number }
   | { type: 'CLOSE_PAYMENT' }
 
+// Built from the profile chosen by the ?perfil= switcher (spec decision #32).
+// A fresh shell mounts per profile (page.tsx re-keys on profileId), so this runs
+// once and `profileId` is stable for the whole session.
+function makeInitialState(profileId: string): AppState {
+  return { ...initialState, profileId }
+}
+
 const initialState: AppState = {
+  profileId: ACTIVE_PROFILE_ID,
   screen: 'wallet',
   view: 'chat',
   chatPhase: 'greeting',
@@ -258,9 +272,32 @@ export function appReducer(state: AppState, action: Action): AppState {
   }
 }
 
-export function AppShell() {
-  const [state, dispatch] = useReducer(appReducer, initialState)
+// Demo-chrome context (spec decision #32): the cue master switch + the single
+// active cue derived from state. Provided once by AppShell so any CueDot deep in
+// the tree can ask "is this MY target the next action?" without prop-drilling.
+// cuesEnabled gates the whole thing (?guia=0 turns it off).
+export interface DemoContextValue {
+  cuesEnabled: boolean
+  activeCue: Cue | null
+}
+const DemoContext = createContext<DemoContextValue>({ cuesEnabled: false, activeCue: null })
+
+/** True iff cues are on AND `target` is the current next-action cue. */
+export function useCueActive(target: Cue): boolean {
+  const { cuesEnabled, activeCue } = useContext(DemoContext)
+  return cuesEnabled && activeCue === target
+}
+
+export function AppShell({
+  profileId = ACTIVE_PROFILE_ID,
+  cuesEnabled = true,
+}: {
+  profileId?: string
+  cuesEnabled?: boolean
+} = {}) {
+  const [state, dispatch] = useReducer(appReducer, profileId, makeInitialState)
   const animate = useAnimateSlides()
+  const activeCue = nextCue(state)
 
   // Silent serverless pre-warm: hit /api/health once on mount so the first real
   // /api/chat call doesn't pay cold-start latency. Fire-and-forget; never blocks
@@ -297,6 +334,7 @@ export function AppShell() {
           <ChatScreen state={state} dispatch={dispatch} active />
         ) : (
           <WalletHome
+            profileId={state.profileId}
             balance={state.balance}
             sessionTxns={state.sessionTxns}
             onOpenRoundai={() => dispatch({ type: 'OPEN_MINIAPP' })}
