@@ -99,6 +99,31 @@ export function monthsAtRate(
   return { reachable: true, months: Math.ceil(remainingAmount / monthlyRate) }
 }
 
+/**
+ * Direction + magnitude of a numeric series (spec decision #28): compares the
+ * average of the first ≤3 entries (base) against the average of the last ≤3
+ * (recent). `pct` is the relative change (recent − base) / base. A ±3% deadband
+ * keeps small wiggles "estable": |pct| < 0.03 → estable, ≥ +0.03 → sube,
+ * ≤ −0.03 → baja. Series shorter than 2, or a zero base (div-by-zero guard),
+ * return { direction: 'estable', pct: 0 }.
+ */
+export function trendOf(series: number[]): {
+  direction: 'sube' | 'estable' | 'baja'
+  pct: number
+} {
+  if (series.length < 2) return { direction: 'estable', pct: 0 }
+  const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
+  // Window = up to 3, but never so wide that base and recent overlap on a
+  // short series (2 entries → 1 each, 5 → 2 each, 6+ → 3 each).
+  const w = Math.min(3, Math.floor(series.length / 2))
+  const base = avg(series.slice(0, w))
+  const recent = avg(series.slice(-w))
+  if (base === 0) return { direction: 'estable', pct: 0 }
+  const pct = (recent - base) / base
+  const direction = pct >= 0.03 ? 'sube' : pct <= -0.03 ? 'baja' : 'estable'
+  return { direction, pct }
+}
+
 /** Format an ARS amount, es-AR, no decimals (emits a NBSP after `$`; spec decision #17). */
 export function formatARS(n: number): string {
   return new Intl.NumberFormat('es-AR', {

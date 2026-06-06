@@ -13,6 +13,7 @@ import {
   monthsAtRate,
   simulateReturns,
   sweepForPayment,
+  trendOf,
   RISK_TO_MARGIN,
   clampMargin,
   savingsCapacity,
@@ -131,6 +132,51 @@ describe('monthsAtRate', () => {
   test('rate ≤ 0 → unreachable, never Infinity/NaN', () => {
     expect(monthsAtRate(1000, 0)).toEqual({ reachable: false, months: null })
     expect(monthsAtRate(1000, -5)).toEqual({ reachable: false, months: null })
+  })
+})
+
+describe('trendOf', () => {
+  // base = avg(first ≤3), recent = avg(last ≤3); pct = (recent − base) / base.
+  // |pct| < 0.03 → estable; ≥ +0.03 → sube; ≤ −0.03 → baja.
+  test('rising series → sube with the relative change', () => {
+    // base avg(100,110,120)=110, recent avg(130,140,150)=140 → (140−110)/110 = 0.2727
+    const r = trendOf([100, 110, 120, 130, 140, 150])
+    expect(r.direction).toBe('sube')
+    expect(r.pct).toBeCloseTo(0.272727, 5)
+  })
+  test('falling series → baja with a negative pct', () => {
+    // base avg(150,140,130)=140, recent avg(120,110,100)=110 → (110−140)/140 = −0.2143
+    const r = trendOf([150, 140, 130, 120, 110, 100])
+    expect(r.direction).toBe('baja')
+    expect(r.pct).toBeCloseTo(-0.214286, 5)
+  })
+  test('flat series within the 3% deadband → estable', () => {
+    // base avg(100,101,99)=100, recent avg(100,99,101)=100 → 0
+    const r = trendOf([100, 101, 99, 100, 99, 101])
+    expect(r.direction).toBe('estable')
+    expect(r.pct).toBeCloseTo(0, 5)
+  })
+  test('change exactly on the +3% boundary → sube (≥)', () => {
+    // base 100, recent 103 → +0.03 exactly
+    expect(trendOf([100, 103]).direction).toBe('sube')
+  })
+  test('change exactly on the −3% boundary → baja (≤)', () => {
+    expect(trendOf([100, 97]).direction).toBe('baja')
+  })
+  test('single-element series → estable / 0', () => {
+    expect(trendOf([100])).toEqual({ direction: 'estable', pct: 0 })
+  })
+  test('empty series → estable / 0', () => {
+    expect(trendOf([])).toEqual({ direction: 'estable', pct: 0 })
+  })
+  test('base of zero is protected (no div-by-zero) → estable / 0', () => {
+    expect(trendOf([0, 0, 0, 50, 60, 70])).toEqual({ direction: 'estable', pct: 0 })
+  })
+  test('short series (2 elements) averages what is there', () => {
+    // base avg(100)=100, recent avg(120)=120 → +0.2
+    const r = trendOf([100, 120])
+    expect(r.direction).toBe('sube')
+    expect(r.pct).toBeCloseTo(0.2, 5)
   })
 })
 
