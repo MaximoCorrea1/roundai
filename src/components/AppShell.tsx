@@ -8,6 +8,7 @@ import { WalletHome } from '@/components/wallet/WalletHome'
 import { ChatScreen } from '@/components/roundai/ChatScreen'
 import { PaymentSheet } from '@/components/wallet/PaymentSheet'
 import { PaymentSuccess } from '@/components/wallet/PaymentSuccess'
+import { strings } from '@/data/strings'
 
 // A paid transaction held in-session, wrapped with the sweep it generated. We
 // keep the raw Transaction shape from data (never mutate its type) and pair it
@@ -29,6 +30,21 @@ export interface SessionTxn {
 // Display-only believable balance — moved here from WalletHome (spec Task 2.1).
 // NOT a derived figure; never re-derive money outside the calculator.
 const BALANCE_INICIAL = 326_500
+
+// Mocked SECONDARY goal (spec decision #29) seeded at ACCEPT_PROPOSAL so the
+// multi-goal page is demoable. It carries its OWN pre-seeded progress
+// (36.500/300.000 = 12%) and is flagged `simulated`, so the goal page labels it
+// "simulada" and never feeds it the real-ledger base sweep — keeps the sandbox
+// honesty intact. This is the one deliberate hand-placed figure; everything else
+// on the goal page derives from the calculator. Its 12% is exact: 36500/300000.
+const MOCK_SECONDARY_GOAL: SavedGoal = {
+  id: 'mock-viaje',
+  label: strings.goal.mockGoalLabel,
+  amount: 300_000,
+  months: 14,
+  accumulated: 36_500,
+  simulated: true,
+}
 
 type Screen = 'wallet' | 'miniapp'
 type MiniView = 'chat' | 'goal'
@@ -151,18 +167,37 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'TOGGLE_ROUNDUP':
       return { ...state, roundupEnabled: !state.roundupEnabled }
 
-    case 'SET_ACTIVE_GOAL':
-      return { ...state, activeGoalId: action.id }
+    case 'SET_ACTIVE_GOAL': {
+      // Selector (decision #29): exactly one goal receives sweeps. `goalProgress`
+      // is the LIVE in-session sweep counter for whatever goal is currently
+      // active. To switch without double-counting, we FOLD the outgoing goal's
+      // live progress into its banked `accumulated`, RESET `goalProgress` to 0,
+      // then make the new goal active so it starts accruing fresh. Re-activating
+      // the original goal later restores its banked progress — sweeps are never
+      // split and never counted twice. (No-op if it's already active.)
+      if (action.id === state.activeGoalId) return state
+      const goals = state.goals.map((g) =>
+        g.id === state.activeGoalId
+          ? { ...g, accumulated: g.accumulated + state.goalProgress }
+          : g,
+      )
+      return { ...state, goals, activeGoalId: action.id, goalProgress: 0 }
+    }
 
     case 'ACCEPT_PROPOSAL':
       // Commit the margin + create the SavedGoal (decision #29), make it active.
+      // We ALSO seed ONE mocked secondary goal so multi-goal is demoable: it
+      // carries its own pre-seeded progress (decision #29 — secondary goals
+      // have their own mocked progress) and is flagged `simulated` so the UI
+      // labels it "simulada" and never feeds it the real-ledger base sweep.
+      // The real goal goes FIRST so it stays the hero on accept.
       // Live turns begin AFTER the activated-confirmation bubble that ChatScreen
       // pushes immediately after this action (hence +1). Everything up to and
       // including that bubble is onboarding, replaced by seedHistory on the wire.
       return {
         ...state,
         marginFraction: action.marginFraction,
-        goals: [...state.goals, action.savedGoal],
+        goals: [...state.goals, action.savedGoal, MOCK_SECONDARY_GOAL],
         activeGoalId: action.savedGoal.id,
         chatPhase: 'live',
         coachStatus: 'idle',

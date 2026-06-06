@@ -20,7 +20,10 @@ export interface SavedGoal {
   label: string
   amount: number // ARS target
   months: number // plazo
-  accumulated: number // ARS swept toward this goal so far
+  accumulated: number // ARS banked toward this goal (live sweeps are folded in on goal switch)
+  // Mocked secondary goal (decision #29) — carries its own pre-seeded progress
+  // and is never fed the real-ledger base sweep. Labeled "simulada" in the UI.
+  simulated?: boolean
 }
 
 export interface ChatMessage {

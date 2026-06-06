@@ -146,6 +146,23 @@ export const strings = {
     active: 'tu perfil',
     recalc: 'tu margen se reajusta solo: liquidez prevista {prevista} vs real {real}',
     comingSoon: 'Tu meta, en breve.',
+    // ── Goal page v2 (spec decisions #29, #30) ──
+    // Multi-goal section (#29): active goal is the ring hero; secondaries are cards.
+    goalsTitle: 'Tus metas',
+    activeBadge: 'recibe tus redondeos', // on the active goal (real)
+    simulatedBadge: 'simulada', // on the mocked secondary goal
+    activate: 'Activar', // selector CTA on a secondary card → becomes the hero
+    // Mocked secondary goal seeded at accept so multi-goal is demoable (#29).
+    mockGoalLabel: 'Viaje a Bariloche',
+    // Streak chip (#30) — mocked, labeled. Near the hero.
+    streak: '✦ racha: 1 mes',
+    // Holdings / position breakdown (#30): aportado / rendimiento / total.
+    holdingsTitle: 'Tu posición',
+    holdingsAportado: 'aportado',
+    holdingsRendimiento: 'rendimiento · simulado',
+    holdingsTotal: 'total',
+    // 12m projection line beneath holdings (conditional, never a promise).
+    holdingsProjection: 'a 12 meses rendiría ~{monto} ✦ simulado',
     // Three FCI risk levels — educational, no named instruments, "en criollo".
     portfolio: {
       conservador: {
