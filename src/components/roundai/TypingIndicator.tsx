@@ -1,5 +1,7 @@
 'use client'
 
+import { strings } from '@/data/strings'
+
 // Three-dot pulse in a coach-style bubble — shown the instant a turn is pending
 // (coachStatus === 'typing'), so the demo never shows a blank pause. Reduced-
 // motion users get three static dots. Keyframes are scoped here (the shared
@@ -10,7 +12,7 @@ export function TypingIndicator() {
     <div
       className="flex w-full justify-start"
       aria-live="polite"
-      aria-label="El coach está escribiendo"
+      aria-label={strings.a11y.coachTyping}
     >
       <style>{TYPING_CSS}</style>
       <div className="flex items-center gap-1.5 rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-3 ring-1 ring-roundai-green/[0.06]">

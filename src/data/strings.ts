@@ -27,6 +27,11 @@ export const strings = {
     sendMessage: 'Enviar',
     backToWallet: 'Volver a la billetera',
     coachTyping: 'El coach está escribiendo',
+    notifications: 'Notificaciones',
+    showBalance: 'Mostrar saldo',
+    hideBalance: 'Ocultar saldo',
+    closePayment: 'Cerrar',
+    progressRing: 'Progreso hacia tu meta',
   },
   onboarding: {
     goalOptions: {
@@ -57,20 +62,49 @@ export const strings = {
   },
   payment: {
     payTitle: 'Pagar',
+    sheetSubtitle: 'Confirmá el pago en un toque',
+    splitPreview: 'Con roundai, este pago también suma a tu meta',
     confirm: 'Confirmar pago',
     toMerchant: 'al comercio',
     toGoal: 'a tu meta',
     sweepBadge: '✦ roundai',
+    // {margen} = formatPct(marginFraction) — shown on the success split chip
+    sweepBadgeWithMargin: '✦ roundai ({margen})',
     withoutRoundai: 'sin roundai: $0 a tu meta',
     success: 'Pago realizado',
+    successSubtitle: 'Listo, {comercio} cobrado.',
+    sweepLanded: 'Tu meta acaba de crecer ✦',
+    done: 'Listo',
+    // {monto} = formatARS(sweep) — subline on the badged session txn in the ledger
+    ledgerSweep: '+{monto} a tu meta',
   },
   goal: {
+    accumulatedLabel: 'este mes · simulado',
+    heroCaption: 'acumulado para tu meta',
     remaining: 'estás a {monto} de tu meta',
+    reached: '¡Llegaste a tu meta! ✦',
     yield: 'tu plata rindió {monto} ✦ simulado',
     pace: 'a este ritmo: {meses} meses',
     sandbox: 'fondos simulados — sandbox',
+    portfolioTitle: 'Tu plata, invertida',
+    active: 'tu perfil',
     recalc: 'tu margen se reajusta solo: liquidez prevista {prevista} vs real {real}',
     comingSoon: 'Tu meta, en breve.',
+    // Three FCI risk levels — educational, no named instruments, "en criollo".
+    portfolio: {
+      conservador: {
+        name: 'Conservador',
+        copy: 'Casi todo en plazos cortos y pesos estables. Crece despacio, pero casi no se mueve para abajo.',
+      },
+      moderado: {
+        name: 'Moderado',
+        copy: 'Una mezcla: parte tranquila, parte con más empuje. Equilibra crecer con dormir tranquilo.',
+      },
+      agresivo: {
+        name: 'Agresivo',
+        copy: 'Más peso en activos que pueden volar… o caer. Apunta a rendir más a la larga, bancando los saltos.',
+      },
+    },
   },
   // Proposal bubbles — interpolated in src/lib/proposal.ts from roundup.ts
   // outputs ONLY. Components never see these directly; they receive ready

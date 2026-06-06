@@ -1,22 +1,25 @@
 import type { Transaction, TxCategory } from '@/data/transactions'
+import type { SessionTxn } from '@/components/AppShell'
+import { formatARS } from '@/lib/roundup'
+import { strings } from '@/data/strings'
 
 // Nimbo transaction ledger. Each row: category icon (inline SVG, mapped from
 // TxCategory) · merchant · right-aligned tabular amount. The list scrolls
 // INTERNALLY so the wallet never overflows the 393×852 screen.
-
-// TODO(phase4): use formatARS from @/lib/roundup (formatters don't exist yet)
-const ars = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
+//
+// Session payments (newest first) render ABOVE the static ledger. A roundai-
+// swept one (sweep > 0) carries a ✦ badge + "+{sweep} a tu meta" subline — the
+// live receipt that closes the causal loop. Money formatting is the calculator's
+// (formatARS), never re-derived here.
 
 export function TransactionList({
   title,
   transactions,
+  sessionTxns = [],
 }: {
   title: string
   transactions: Transaction[]
+  sessionTxns?: SessionTxn[]
 }) {
   return (
     <section className="flex min-h-0 flex-1 flex-col">
@@ -29,6 +32,49 @@ export function TransactionList({
         style={{ borderRadius: 'var(--radius-md)' }}
       >
         <ul>
+          {/* session payments first, badged when roundai swept */}
+          {sessionTxns.map((s, i) => (
+            <li key={`session-${s.tx.id}-${i}`}>
+              <div className="flex items-center gap-3 bg-lime/[0.07] px-4 py-[11px]">
+                <span
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-roundai-green text-lime"
+                  aria-hidden="true"
+                >
+                  <CategoryIcon category={s.tx.category} />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 truncate text-[14px] font-medium leading-tight text-ink">
+                    {s.tx.merchant}
+                    {s.sweep > 0 && (
+                      <span
+                        className="shrink-0 rounded-full bg-roundai-green px-1.5 py-[2px] text-[9px] font-semibold leading-none text-lime"
+                        aria-label={strings.payment.sweepBadge}
+                      >
+                        ✦
+                      </span>
+                    )}
+                  </p>
+                  {s.sweep > 0 ? (
+                    <p className="tnum text-[11px] font-medium leading-tight text-lime-deep">
+                      {strings.payment.ledgerSweep.replace('{monto}', formatARS(s.sweep))}
+                    </p>
+                  ) : (
+                    <p className="text-[11.5px] capitalize leading-tight text-muted">
+                      {categoryLabel(s.tx.category)}
+                    </p>
+                  )}
+                </div>
+
+                <span className="tnum shrink-0 text-[14px] font-semibold text-ink">
+                  −{formatARS(s.tx.amount)}
+                </span>
+              </div>
+              <div className="ml-[60px] h-px bg-nimbo-line" />
+            </li>
+          ))}
+
+          {/* static ledger */}
           {transactions.map((tx, i) => (
             <li key={tx.id}>
               <div className="flex items-center gap-3 px-4 py-[11px]">
@@ -49,7 +95,7 @@ export function TransactionList({
                 </div>
 
                 <span className="tnum shrink-0 text-[14px] font-semibold text-ink">
-                  −{ars.format(tx.amount)}
+                  −{formatARS(tx.amount)}
                 </span>
               </div>
               {i < transactions.length - 1 && (

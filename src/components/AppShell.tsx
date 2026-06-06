@@ -2,8 +2,20 @@
 
 import { useEffect, useReducer, useState } from 'react'
 import type { Goal, ChatMessage } from '@/lib/chat-types'
+import type { Transaction } from '@/data/transactions'
 import { WalletHome } from '@/components/wallet/WalletHome'
 import { ChatScreen } from '@/components/roundai/ChatScreen'
+import { PaymentSheet } from '@/components/wallet/PaymentSheet'
+import { PaymentSuccess } from '@/components/wallet/PaymentSuccess'
+
+// A paid transaction held in-session, wrapped with the sweep it generated. We
+// keep the raw Transaction shape from data (never mutate its type) and pair it
+// with the roundai sweep so the ledger can render the ✦ badge + subline. A sweep
+// of 0 means roundai wasn't active when this payment was made.
+export interface SessionTxn {
+  tx: Transaction
+  sweep: number
+}
 
 // ───────────────────────────────────────────────────────────────────────────
 // The in-phone navigation state machine (spec Task 2.1). ONE owner of all
@@ -29,9 +41,12 @@ export interface AppState {
   marginFraction: number | null
   messages: ChatMessage[]
   coachStatus: 'idle' | 'typing' | 'streaming' | 'fallback'
-  payment: 'idle' | 'sheet' | 'success' // payment UI lands Phase 6; reducer support now
+  payment: 'idle' | 'sheet' | 'success'
   balance: number
   goalProgress: number // accumulated sweeps from in-session payments
+  // Paid-this-session transactions (newest first), each wrapped with the sweep
+  // it produced. Rendered ABOVE the static ledger in TransactionList.
+  sessionTxns: SessionTxn[]
   // Index into `messages` where the LIVE conversation begins (everything before
   // it is onboarding, already represented by the seeded history). Captured at
   // ACCEPT_PROPOSAL so useChat can slice live turns without recomputing the
@@ -51,7 +66,7 @@ export type Action =
   | { type: 'SET_PHASE'; phase: ChatPhase }
   | { type: 'SWITCH_VIEW'; view: MiniView }
   | { type: 'START_PAYMENT' }
-  | { type: 'CONFIRM_PAYMENT'; amount: number; sweep: number }
+  | { type: 'CONFIRM_PAYMENT'; tx: Transaction; sweep: number }
   | { type: 'CLOSE_PAYMENT' }
 
 const initialState: AppState = {
@@ -65,6 +80,7 @@ const initialState: AppState = {
   payment: 'idle',
   balance: BALANCE_INICIAL,
   goalProgress: 0,
+  sessionTxns: [],
   liveStartIndex: -1,
 }
 
@@ -129,12 +145,15 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, payment: 'sheet' }
 
     case 'CONFIRM_PAYMENT':
-      // balance −= amount + sweep; goalProgress += sweep; sweep is computed by
-      // the caller (the calculator) and passed in — the reducer never does money math.
+      // balance −= amount + sweep; goalProgress += sweep; PREPEND the paid txn
+      // (wrapped with its sweep) so the ledger shows it on top. The sweep is
+      // computed by the caller (the calculator) and passed in — the reducer
+      // never does money math.
       return {
         ...state,
-        balance: state.balance - action.amount - action.sweep,
+        balance: state.balance - action.tx.amount - action.sweep,
         goalProgress: state.goalProgress + action.sweep,
+        sessionTxns: [{ tx: action.tx, sweep: action.sweep }, ...state.sessionTxns],
         payment: 'success',
       }
 
@@ -189,10 +208,34 @@ export function AppShell() {
         ) : (
           <WalletHome
             balance={state.balance}
+            sessionTxns={state.sessionTxns}
             onOpenRoundai={() => dispatch({ type: 'OPEN_MINIAPP' })}
+            onPay={() => dispatch({ type: 'START_PAYMENT' })}
           />
         )}
       </div>
+
+      {/* Payment layer — a modal sheet/success that lives INSIDE the phone screen
+          (its scrim covers only this 393×852 viewport, never the bezel). Mounted
+          as a sibling of the screen track, above it, but the dynamic island /
+          home indicator (z-30, in PhoneFrame) still paint on top of it. */}
+      {state.payment !== 'idle' && (
+        <div className="absolute inset-0 z-20">
+          {state.payment === 'sheet' ? (
+            <PaymentSheet
+              marginFraction={state.marginFraction}
+              onConfirm={(tx, sweep) => dispatch({ type: 'CONFIRM_PAYMENT', tx, sweep })}
+              onClose={() => dispatch({ type: 'CLOSE_PAYMENT' })}
+            />
+          ) : (
+            <PaymentSuccess
+              sweep={state.sessionTxns[0]?.sweep ?? 0}
+              marginFraction={state.marginFraction}
+              onClose={() => dispatch({ type: 'CLOSE_PAYMENT' })}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }

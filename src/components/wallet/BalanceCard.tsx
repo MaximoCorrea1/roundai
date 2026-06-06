@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { strings } from '@/data/strings'
 
 // Nimbo balance card — deliberately conventional neobank surface: white card,
 // cool slate label, tabular figure, a quiet hide/show eye toggle. Restraint on
@@ -36,7 +37,7 @@ export function BalanceCard({
           <button
             type="button"
             onClick={() => setHidden((v) => !v)}
-            aria-label={hidden ? 'Mostrar saldo' : 'Ocultar saldo'}
+            aria-label={hidden ? strings.a11y.showBalance : strings.a11y.hideBalance}
             className="grid h-7 w-7 place-items-center rounded-full text-nimbo-slate transition-colors hover:bg-nimbo-tint"
           >
             {hidden ? <EyeOffIcon /> : <EyeIcon />}

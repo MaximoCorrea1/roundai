@@ -38,7 +38,7 @@ export function MiniappHeader({
           <button
             type="button"
             onClick={() => dispatch({ type: 'BACK_TO_WALLET' })}
-            aria-label="Volver a la billetera"
+            aria-label={strings.a11y.backToWallet}
             className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-cream/10 text-cream transition-colors active:bg-cream/[0.18]"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">

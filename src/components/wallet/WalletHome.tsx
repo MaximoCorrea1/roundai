@@ -3,6 +3,8 @@
 import { activeProfile, ACTIVE_PROFILE_ID } from '@/data/profiles'
 import { transactionsFor } from '@/data/transactions'
 import { strings } from '@/data/strings'
+import { formatARS } from '@/lib/roundup'
+import type { SessionTxn } from '@/components/AppShell'
 import { BalanceCard } from './BalanceCard'
 import { TransactionList } from './TransactionList'
 import { BottomNav } from './BottomNav'
@@ -14,19 +16,19 @@ import { RoundaiTile } from './RoundaiTile'
 // the 393×852 screen with NO vertical overflow; only the ledger scrolls.
 
 // Balance is owned by the AppShell reducer (so payments can decrement it) and
-// passed in. NOT a derived figure — never re-derive money outside the calculator.
-const ars = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
+// passed in. NOT a derived figure — never re-derive money outside the calculator
+// (formatARS is the calculator's es-AR formatter).
 
 export function WalletHome({
   balance,
+  sessionTxns = [],
   onOpenRoundai,
+  onPay,
 }: {
   balance: number
+  sessionTxns?: SessionTxn[]
   onOpenRoundai?: () => void
+  onPay?: () => void
 }) {
   const profile = activeProfile()
   const transactions = transactionsFor(ACTIVE_PROFILE_ID)
@@ -57,7 +59,7 @@ export function WalletHome({
           </div>
           <button
             type="button"
-            aria-label="Notificaciones"
+            aria-label={strings.a11y.notifications}
             className="relative grid h-10 w-10 place-items-center rounded-full bg-nimbo-surface text-nimbo-slate-deep shadow-[var(--shadow-card)]"
           >
             <svg width="19" height="19" viewBox="0 0 19 19" fill="none" aria-hidden="true">
@@ -76,12 +78,12 @@ export function WalletHome({
 
         {/* balance */}
         <div className="shrink-0">
-          <BalanceCard label={w.balanceLabel} amount={ars.format(balance)} />
+          <BalanceCard label={w.balanceLabel} amount={formatARS(balance)} />
         </div>
 
         {/* action row */}
         <div className="grid shrink-0 grid-cols-3 gap-2.5">
-          <ActionButton label={w.actions.pay}>
+          <ActionButton label={w.actions.pay} onClick={onPay}>
             <PayIcon />
           </ActionButton>
           <ActionButton label={w.actions.transfer}>
@@ -102,8 +104,13 @@ export function WalletHome({
           />
         </div>
 
-        {/* ledger — the only scrolling element */}
-        <TransactionList title={w.ledgerTitle} transactions={transactions} />
+        {/* ledger — the only scrolling element. Session payments (newest first)
+            render above the static ledger; the roundai-swept one is badged. */}
+        <TransactionList
+          title={w.ledgerTitle}
+          transactions={transactions}
+          sessionTxns={sessionTxns}
+        />
       </div>
 
       <BottomNav labels={w.nav} />
@@ -114,13 +121,16 @@ export function WalletHome({
 function ActionButton({
   label,
   children,
+  onClick,
 }: {
   label: string
   children: React.ReactNode
+  onClick?: () => void
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex flex-col items-center gap-1.5 rounded-2xl bg-nimbo-surface py-3 shadow-[var(--shadow-card)] transition-transform active:scale-[0.97]"
     >
       <span className="grid h-9 w-9 place-items-center rounded-full bg-nimbo-tint text-nimbo-slate-deep">
