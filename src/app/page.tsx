@@ -1,4 +1,5 @@
 import { PhoneFrame } from '@/components/phone/PhoneFrame'
+import { WalletHome } from '@/components/wallet/WalletHome'
 
 // The browser canvas AROUND the phone — the only place (with the RoundaiTile)
 // where the roundai brand appears in Phase 1. Deep green field with atmosphere:
@@ -47,9 +48,7 @@ export default function Home() {
 
       {/* the device */}
       <PhoneFrame>
-        <div className="flex h-full w-full items-center justify-center text-muted">
-          {/* placeholder — WalletHome wires in here (Task 1.4) */}
-        </div>
+        <WalletHome />
       </PhoneFrame>
 
       {/* footer hairline — quiet B2B framing, bottom-right */}
