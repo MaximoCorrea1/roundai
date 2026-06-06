@@ -31,6 +31,23 @@ export const strings = {
     },
     amountPrompt: '¿De cuánto hablamos?',
     accept: 'Dale, activalo',
+    // Staggered greeting bubbles on first open. {nombre} + ONE real data point
+    // ({capacidad} = formatARS(savingsCapacity(profile))) — no invented numbers.
+    greeting: {
+      hola: 'Hola {nombre} 👋 soy tu coach de roundai.',
+      dato: 'Ya le eché un ojo a tus movimientos: te quedaron ~{capacidad} a fin de mes, en promedio.',
+      pregunta: '¿Con qué te puedo dar una mano?',
+    },
+    // ARS amount entry (for 'meta' / 'ahorrar')
+    amount: {
+      label: 'Monto de tu meta',
+      placeholder: '0',
+      confirm: 'Listo',
+      quick: { lo: '$ 500.000', mid: '$ 1.000.000', hi: '$ 2.000.000' },
+      quickValues: { lo: 500_000, mid: 1_000_000, hi: 2_000_000 },
+    },
+    // Inline confirmation bubble after the proposal is accepted.
+    activated: 'Listo, lo activé ✦ Desde ahora cada pago suma a tu meta. Preguntame lo que quieras.',
   },
   payment: {
     payTitle: 'Pagar',
