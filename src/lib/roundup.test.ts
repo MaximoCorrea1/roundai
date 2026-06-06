@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import { profiles } from '../data/profiles'
 import { transactionsFor } from '../data/transactions'
-import { RISK_TO_MARGIN, clampMargin, savingsCapacity, ValidationError } from './roundup'
+import {
+  computeOptimalMargin,
+  RISK_TO_MARGIN,
+  clampMargin,
+  savingsCapacity,
+  ValidationError,
+} from './roundup'
 
 // Lib tests use RELATIVE imports (vitest resolves the '@' alias too, but the
 // plan keeps lib tests on relative paths). Fixtures from the seed data.
@@ -40,5 +46,20 @@ describe('clampMargin', () => {
   })
   test('passes through a value already in range', () => {
     expect(clampMargin(0.07)).toBe(0.07)
+  })
+})
+
+describe('computeOptimalMargin', () => {
+  test('mati: risk table wins (capacity ratio 0.0918 > table 0.07)', () => {
+    expect(computeOptimalMargin(mati)).toBe(0.07)
+  })
+  test('lu: capacity-capped below the conservative table rate', () => {
+    expect(computeOptimalMargin(lu)).toBeCloseTo(0.020115, 5)
+  })
+  test('fede: aggressive table rate', () => {
+    expect(computeOptimalMargin(fede)).toBe(0.12)
+  })
+  test('zero-capacity profile → 0', () => {
+    expect(computeOptimalMargin({ ...mati, liquidezFinDeMes: [0, 0, 0] })).toBe(0)
   })
 })

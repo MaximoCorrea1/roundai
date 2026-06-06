@@ -45,3 +45,12 @@ export function clampMargin(f: number): number {
     )
   return Math.min(0.2, Math.max(0.01, f))
 }
+
+/** Sustainable margin: min(risk-table rate, capacity/gasto), clamped; capacity ≤ 0 → 0. */
+export function computeOptimalMargin(profile: UserProfile): number {
+  const cap = savingsCapacity(profile)
+  if (cap <= 0) return 0
+  return clampMargin(
+    Math.min(RISK_TO_MARGIN[profile.riskProfile] ?? RISK_TO_MARGIN.moderado, cap / profile.gastoMensual),
+  )
+}
