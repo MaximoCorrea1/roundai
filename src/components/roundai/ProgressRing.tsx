@@ -18,6 +18,8 @@ const SIZE = 200
 const STROKE = 14
 const R = (SIZE - STROKE) / 2
 const C = 2 * Math.PI * R
+// Ring milestones (spec decision #30): subtle ticks at 25 / 50 / 75%.
+const MILESTONES = [0.25, 0.5, 0.75] as const
 
 export function ProgressRing({
   accumulated,
@@ -90,6 +92,28 @@ export function ProgressRing({
               transition: reduced ? 'none' : 'stroke-dashoffset 900ms cubic-bezier(0.22,1,0.36,1)',
             }}
           />
+          {/* milestone ticks at 25 / 50 / 75% (spec decision #30): subtle radial
+              marks across the stroke band; lime once the target progress crosses
+              them, muted otherwise. Pure geometry on the same -90° frame as the
+              arc, so they sit exactly where each quarter lands. */}
+          {MILESTONES.map((m) => {
+            const angle = m * 2 * Math.PI // 0 at 3 o'clock; the -90° group rotation puts 0% at top
+            const cx = SIZE / 2 + R * Math.cos(angle)
+            const cy = SIZE / 2 + R * Math.sin(angle)
+            const crossed = target >= m
+            return (
+              <circle
+                key={m}
+                cx={cx}
+                cy={cy}
+                r={STROKE / 2 - 4}
+                fill={crossed ? 'var(--color-lime-deep)' : 'var(--color-cream)'}
+                stroke={crossed ? 'var(--color-roundai-green)' : 'var(--color-roundai-green)'}
+                strokeOpacity={crossed ? 0.25 : 0.12}
+                strokeWidth={1}
+              />
+            )
+          })}
           <defs>
             <linearGradient id="roundai-ring-grad" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stopColor="var(--color-lime-deep)" />

@@ -235,7 +235,7 @@ export function ChatScreen({
           <ChatInput enabled={canSend} onSend={sendMessage} />
         </>
       ) : (
-        <GoalScreen state={state} />
+        <GoalScreen state={state} dispatch={dispatch} />
       )}
     </div>
   )
