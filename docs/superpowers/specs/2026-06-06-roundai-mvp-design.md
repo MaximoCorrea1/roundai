@@ -12,8 +12,10 @@ Client = the wallet (B2B). End user = the wallet's users, who have low financial
 
 A judge can: open the app → see a believable wallet → tap the roundai icon → chat with a coach
 that already knows them → pick the "compu de $500k" goal → get a sustainable round-up margin
-calibrated to their liquidity → see a progress/gamification screen. All inside the iPhone frame,
-on-brand, chat powered by the real Claude API behind a secure server-side proxy.
+calibrated to their liquidity → make a mock payment and watch the sweep land in the goal
+(`$4.350 al comercio · +$305 a tu meta`, with the "sin roundai: $0 a tu meta" comparison) →
+see a progress/gamification screen that reflects that exact payment. All inside the iPhone
+frame, on-brand, chat powered by the real Claude API behind a secure server-side proxy.
 
 ---
 
@@ -28,7 +30,7 @@ on-brand, chat powered by the real Claude API behind a secure server-side proxy.
 | 5 | Deployment | Vercel, throwaway deploy on Day 1; rehearse + present from deployed URL; localhost backup | Surfaces env/pipeline issues early, not on demo day |
 | 6 | Margin semantics | Stored as **fraction** (`0.05`), name `marginFraction`, clamp [0.01, 0.20]; % only at display | Percent/fraction ambiguity silently makes 100× errors |
 | 7 | Risk mapping | Closed table `{conservador: 0.03, moderado: 0.07, agresivo: 0.12}`; unknown → moderado | Table beats formula: testable, and the coach gets the exact numbers |
-| 8 | Round-up vs margin | All math = `marginFraction × gastoMensual`. Per-transaction round-ups shown ONLY as illustration ("esto equivale a ~7% mensual") | Branding and formula describe different products; one source of truth so views can't contradict |
+| 8 | Round-up semantics | **Margin sweep per payment:** `sweepForPayment(amount, margin) = round(margin × amount)` (nearest peso, half-up). Monthly: `monthlySweepTotal(ledger, margin) = Σ sweepᵢ = margin × gastoMensual ± n/2 pesos`. Classic $100-step round-up appears only in copy as the inspiration roundai calibrates ("el redondeo clásico junta monedas — roundai lo calibra a tu meta") | Literal step rounding either captures ~0,17% of spend (goal unreachable) or needs absurd ~$4.000 steps; the sweep makes payment screen, ledger, goal progress, and coach quotes reconcile exactly and testably |
 | 9 | monthsToGoal | Returns `{ reachable: boolean, months: number \| null }`, `Math.ceil`, excludes returns ("sin contar rendimientos") | Infinity/NaN can never reach UI or prompt; ceil never under-promises (compliance-safe) |
 | 10 | Number drift | UI and route both import `src/lib/roundup.ts` (the ONLY calculator); route injects **pre-formatted** figures marked authoritative | LLMs botch arithmetic; drift between screen and coach is the #1 fintech-judge credibility kill |
 | 11 | API runtime | Node runtime, `force-dynamic`, `maxDuration = 30` | Edge buys nothing here; SDK behaves best on Node |
@@ -43,6 +45,8 @@ on-brand, chat powered by the real Claude API behind a secure server-side proxy.
 | 20 | Animations | CSS transforms/transitions first; Framer Motion only if a transition feels stiff | Judges see polish, not dependencies |
 | 21 | Wallet brand | Fictional host wallet "**Nimbo**" — deliberately neutral neobank look | Must read as "any wallet" to sell the embedded-B2B thesis without cloning a real brand |
 | 22 | Returns sim | Fixed illustrative TNA (placeholder 35%), monthly accrual, always labeled "simulado" | Honest, simple, replaceable when real numbers arrive |
+| 23 | Mock payment flow | In-wallet beat after activation: payment sheet (Café Martínez, $4.350) → success screen with the split `$4.350 al comercio · +$305 a tu meta ✦ roundai (7%)` + comparison line "sin roundai: $0 a tu meta"; balance decrements by amount+sweep, badged txn tops the ledger, goal progress ticks by exactly the sweep | Closes the causal loop live in front of the judge; the comparison sells the counterfactual with zero extra state |
+| 24 | Ledger discipline | Each profile's mock transactions sum EXACTLY to `gastoMensual` (asserted in tests); `monthsToGoal` and goal projections consume `monthlySweepTotal` of the displayed ledger | Every on-screen stat is recomputable by hand from visible data — precision a fintech judge can check |
 
 ---
 
@@ -55,6 +59,7 @@ Browser ────────────────────────
 │      screen: wallet → miniapp                                       │
 │      chatPhase: greeting → goalSelect → goalInput → proposal → live │
 │      view (miniapp): chat | goal                                    │
+│      payment: idle → sheet → success · shared: balance, progress    │
 │    UI math/formatting: import { ... } from '@/lib/roundup'          │
 └──────────────┬───────────────────────────────────────────────────────┘
                │ POST /api/chat { profileId, goal, marginFraction, messages }
@@ -109,6 +114,8 @@ computeOptimalMargin(profile)             // min(riskTable, capacity/gasto) clam
 monthlyContribution(profile, margin)      // margin × gastoMensual
 isSustainable(profile, margin)            // contribution ≤ savingsCapacity && margin > 0
 monthsToGoal(profile, margin, goal)       // { reachable, months } per decision #9
+sweepForPayment(amount, margin)           // round(margin × amount), nearest peso half-up — THE per-payment rule
+monthlySweepTotal(ledger, margin)         // Σ sweeps over the mock ledger; feeds goal progress + monthsToGoal
 simulateReturns(contribution, months)     // TNA_SIMULADA accrual; labeled "simulado"
 formatARS(n); formatPct(f)                // es-AR display strings (decision #17)
 liquidityBand(profile)                    // 'baja' | 'media' | 'alta' (thresholds vs gastoMensual)
@@ -116,7 +123,8 @@ liquidityBand(profile)                    // 'baja' | 'media' | 'alta' (threshol
 
 Edge cases under test: low/med/high liquidity profiles, unrealistic goal (honest branch),
 `gastoMensual = 0`, capacity ≤ 0, margin-unit guard (rejects `5` meaning 5%), NBSP-safe ARS
-assertions, negative inputs → typed `ValidationError`.
+assertions, negative inputs → typed `ValidationError`, per-profile ledger sums exactly to
+`gastoMensual`, sweep totals within n/2 pesos of `margin × gasto`.
 
 ### Compliance guardrails
 

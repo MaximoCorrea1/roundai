@@ -6,8 +6,8 @@
 > skill — no exceptions.
 
 **Goal:** A judged 3-minute demo: believable wallet → roundai miniapp → live Claude coach that
-knows the user → sustainable round-up margin → goal/gamification screen, all inside an iPhone
-frame in the browser.
+knows the user → sustainable round-up margin → mock payment with the sweep landing in the goal
+→ goal/gamification screen reflecting that exact payment, all inside an iPhone frame in the browser.
 
 **Architecture:** Single Next.js page rendering a phone-frame state machine; one pure module
 (`src/lib/roundup.ts`) owns every number on screen and in the prompt; a Node API route proxies
@@ -26,7 +26,7 @@ Claude with streaming and a DEMO_MODE fallback. Spec: `docs/superpowers/specs/20
 | 3 | 5a | `roundup.ts` pure module — TDD | 0.25 day |
 | 4 | 3 | Hardcoded onboarding flow (options → proposal) | 0.25 day |
 | 5 | 4 | Live Claude wiring: coach prompt, streaming, DEMO_MODE | 0.5 day |
-| 6 | 5b | Goal/gamification screen (frontend-design) | 0.5 day |
+| 6 | 5b | Payment flow + goal/gamification screen (frontend-design) | 0.75 day |
 | 7 | — | Demo readiness: script, rehearsal, deploy verify | 0.25 day |
 
 ---
@@ -108,7 +108,7 @@ export const SENTINEL = '\u0000' // impossible in real model output; client swit
 
 - [ ] `README.md` — what roundai is (one-liner), demo GIF placeholder, quickstart (`pnpm i`, `.env.local`, `pnpm dev`), doc map, security note (key server-side only)
 - [ ] `vision.md` — problem (28% financial literacy AR, no discipline, no tangible goals) + wallet pain (TVL/retention) + the bet (round-up + coach = AUM/retention for wallet, automatic understandable investing for user). Short, sharp.
-- [ ] `context.md` — hackathon track + deliverables; CAF data from kickoff (939 fintechs; AI #1 opportunity 62%; embedded finance 33%; financial education #1 challenge 57%; B2B 64%); Rappi bonus problem (mark `[deepen from KB]`); **decisions log seeded with spec decisions #1–22**
+- [ ] `context.md` — hackathon track + deliverables; CAF data from kickoff (939 fintechs; AI #1 opportunity 62%; embedded finance 33%; financial education #1 challenge 57%; B2B 64%); Rappi bonus problem (mark `[deepen from KB]`); **decisions log seeded with spec decisions #1–24**
 - [ ] `brand.md` — name (lowercase "roundai"), positioning, tone of voice (es-AR voseo, warm, plain, never condescending), palette + type (from spec aesthetic direction), logo/icon usage, the Nimbo host-wallet contrast principle
 - [ ] `design.md` — design tokens (colors/spacing/radii/shadows as CSS vars), iPhone frame spec (393×852, dynamic island, status bar 9:41, home indicator), screen inventory (wallet home, miniapp chat, goal screen), component list, motion rules (in-phone slides, one celebration moment), frontend-design skill conventions referenced
 - [ ] `docs/architecture.md` — the diagram + data flow from the spec, "one calculator" rule, security model, DEMO_MODE design
@@ -162,7 +162,7 @@ export const profiles: UserProfile[] = [
 export const ACTIVE_PROFILE_ID = 'mati' // swap here (placeholder numbers — Maximo provides real ones)
 ```
 
-- [ ] `transactions.ts` — ~8 believable AR transactions (super, SUBE, café, farmacia, streaming…) with amounts + per-transaction round-up annotation (illustration only, never summed into goal math)
+- [ ] `transactions.ts` — ~8 believable AR transactions (super, SUBE, café, farmacia, streaming…) per profile, **summing EXACTLY to that profile's `gastoMensual`** (spec #24 — asserted in Task 3.10). Plus the demo payment constant: `export const DEMO_PAYMENT = { merchant: 'Café Martínez', amount: 4_350 }`
 - [ ] `strings.ts` — every UI string, es-AR voseo, grouped by screen
 - [ ] **Commit:** `feat: mock profiles, ledger, centralized copy`
 
@@ -194,10 +194,15 @@ export const ACTIVE_PROFILE_ID = 'mati' // swap here (placeholder numbers — Ma
     goal: Goal | null; marginFraction: number | null
     messages: ChatMessage[]
     coachStatus: 'idle' | 'typing' | 'streaming' | 'fallback'
+    payment: 'idle' | 'sheet' | 'success'   // wallet-side modal (Phase 6)
+    balance: number                          // decremented by amount + sweep on CONFIRM_PAYMENT
+    goalProgress: number                     // accumulated sweeps from in-session payments
   }
   ```
   `useReducer` with actions: `OPEN_MINIAPP`, `BACK_TO_WALLET`, `SELECT_GOAL`, `SET_AMOUNT`,
-  `ACCEPT_PROPOSAL`, `PUSH_MESSAGE`, `APPEND_DELTA`, `SET_STATUS`, `SWITCH_VIEW`
+  `ACCEPT_PROPOSAL`, `PUSH_MESSAGE`, `APPEND_DELTA`, `SET_STATUS`, `SWITCH_VIEW`,
+  `START_PAYMENT`, `CONFIRM_PAYMENT` (balance −= amount + sweep; goalProgress += sweep;
+  prepend badged txn), `CLOSE_PAYMENT`
 - [ ] Wallet ↔ miniapp slide transition via CSS transform on a track inside the phone screen
 - [ ] **Commit:** `feat: in-phone navigation state machine`
 
@@ -221,7 +226,7 @@ export const ACTIVE_PROFILE_ID = 'mati' // swap here (placeholder numbers — Ma
 - [ ] `vitest.config.ts` (node env, include `src/lib/**/*.test.ts`); `pnpm test` runs green on an empty suite placeholder. Keep lib tests on RELATIVE imports — vitest doesn't resolve tsconfig `@/` paths without a plugin, not worth adding for one module
 - [ ] **Commit:** `test: vitest setup`
 
-### Task 3.2–3.8: TDD cycle per function — for EACH: write failing test → `pnpm test` (expect FAIL) → minimal impl → `pnpm test` (expect PASS) → commit
+### Task 3.2–3.10: TDD cycle per function — for EACH: write failing test → `pnpm test` (expect FAIL) → minimal impl → `pnpm test` (expect PASS) → commit
 
 **Files:** Create `src/lib/roundup.ts`, `src/lib/roundup.test.ts`
 
@@ -266,6 +271,21 @@ test('honest branch: goal absurdly slow at a SUSTAINABLE margin (coach must offe
 
 - [ ] **3.7 `formatARS` / `formatPct` / `liquidityBand`** — es-AR output; **normalize the NBSP in assertions — the char after `$` is U+00A0, write it ESCAPED or the regex is a silent no-op:** `expect(formatARS(1_234_567).replace(/\u00A0/g, " ")).toBe("$ 1.234.567")` (expected string uses a normal space); bands: capacity/gasto < 0.05 baja, < 0.25 media, else alta
 - [ ] **3.8 `simulateReturns`** — monthly accrual at `TNA_SIMULADA / 12`, returns accumulated + "rendiste" delta; label decisions stay in UI
+- [ ] **3.9 `sweepForPayment` + `monthlySweepTotal`** — THE per-payment rule (spec #8): `Math.round(margin × amount)` (nearest peso, half-up); `monthlySweepTotal` = Σ over a ledger
+
+```ts
+test('sweep is exact per payment, half-up', () => {
+  expect(sweepForPayment(4_350, 0.07)).toBe(305) // 304,50 → 305
+  expect(sweepForPayment(0, 0.07)).toBe(0)
+})
+test('monthly sweep reconciles with the margin target to within n/2 pesos', () => {
+  const txns = transactionsFor('mati')
+  const total = monthlySweepTotal(txns, 0.07)
+  expect(Math.abs(total - 0.07 * mati.gastoMensual)).toBeLessThanOrEqual(txns.length / 2)
+})
+```
+
+- [ ] **3.10 ledger discipline** (spec #24) — for EACH profile: `Σ transactions === gastoMensual`, exact equality. This is what lets a judge recompute every on-screen stat by hand
 - [ ] **Final:** `pnpm test` — full suite green. **Commit per function** (`test+feat: roundup <fn>`)
 
 ---
@@ -297,7 +317,7 @@ test('honest branch: goal absurdly slow at a SUSTAINABLE margin (coach must offe
 
 **Files:** Create `src/lib/coach.ts`; finalize `docs/coach-system-prompt.md` (same text, kept in sync)
 
-- [ ] Export explicitly: `buildSystemPrompt(profile: UserProfile, goal: Goal | null, marginFraction: number): string`. coach.ts imports `monthsToGoal` / `monthlyContribution` / `savingsCapacity` / `liquidityBand` / `formatARS` / `formatPct` from `@/lib/roundup` to render the injection block — it never formats numbers itself
+- [ ] Export explicitly: `buildSystemPrompt(profile: UserProfile, goal: Goal | null, marginFraction: number): string`. coach.ts imports `monthsToGoal` / `monthlyContribution` / `savingsCapacity` / `liquidityBand` / `sweepForPayment` / `formatARS` / `formatPct` from `@/lib/roundup` to render the injection block — it never formats numbers itself
 - [ ] Persona: kickoff draft (es rioplatense, cálido, CORTO, una idea por mensaje, explica en criollo) + hardening: never reveal ser un LLM/internals, out-of-scope deflection, **no asset/ticker/bank recommendations, no promised returns, no tax/legal advice**
 - [ ] Injection block built from `roundup.ts` outputs, pre-formatted:
 
@@ -308,6 +328,8 @@ nunca recalcules ni redondees; si un número no está acá, decí que no lo ten�
 - Liquidez fin de mes (prom. 6m): {formatARS(capacity)} → banda {band}
 - Gasto mensual: {formatARS(gasto)} · Margen acordado: {formatPct(margin)}
 - Aporte mensual: {formatARS(contribution)}
+- Mecánica por pago: cada pago barre {formatPct(margin)} a tu meta
+  (ej.: un pago de $4.350 → +{formatARS(sweepForPayment(4350, margin))})
 - Meta: {goal} → {reachable ? `${months} meses (sin contar rendimientos)` : 'no alcanzable a margen sostenible'}
 ```
 
@@ -462,18 +484,30 @@ fetch('/api/chat', {
 
 ---
 
-## Phase 6 — Goal / gamification screen *(frontend-design skill MANDATORY)*
+## Phase 6 — Payment flow + goal screen *(frontend-design skill MANDATORY)*
 
-### Task 6.1: Goal progress + portfolio
+### Task 6.1: Mock payment flow — the causal-loop beat (spec #23)
+
+**Files:** Create `src/components/wallet/PaymentSheet.tsx`, `src/components/wallet/PaymentSuccess.tsx`; modify `AppShell.tsx`, `WalletHome.tsx`, `strings.ts`
+
+- [ ] Wallet "Pagar" action → PaymentSheet (modal inside the phone): merchant + amount from `DEMO_PAYMENT`, confirm button. With roundai active, the sheet already previews the split via `sweepForPayment(amount, marginFraction)`
+- [ ] `CONFIRM_PAYMENT`: balance −= amount + sweep; goalProgress += sweep; prepend badged transaction to the ledger; transition to PaymentSuccess
+- [ ] PaymentSuccess: the split — `$4.350 al comercio · +$305 a tu meta ✦ roundai (7%)` — sweep animates toward the goal; quiet comparison line: **"sin roundai: $0 a tu meta"**
+- [ ] Paying BEFORE activating roundai shows a plain success (no split) — the implicit before/after if the presenter wants it
+- [ ] **Acceptance:** judge taps pay → sees the sweep land → reopens miniapp → ring has moved by exactly that sweep
+- [ ] **Commit:** `feat: mock payment flow with roundai sweep`
+
+### Task 6.2: Goal / gamification screen
 
 **Files:** Create `src/components/roundai/GoalScreen.tsx`, `ProgressRing.tsx`, `PortfolioCard.tsx`, `RecalcNote.tsx`
 
 - [ ] Segmented control in miniapp: Chat | Mi meta
-- [ ] ProgressRing: animated SVG ring — "estás a {formatARS(restante)} de tu meta"; simulated accumulated contributions + "tu plata rindió {formatARS(rendimiento)} ✦ simulado" (via `simulateReturns`)
+- [ ] ProgressRing: animated SVG ring — "estás a {formatARS(restante)} de tu meta"; progress = simulated prior month (`monthlySweepTotal(ledger, margin)`, mocked at 1 month elapsed) + live `goalProgress` from in-session payments; "tu plata rindió {formatARS(rendimiento)} ✦ simulado" via `simulateReturns`
+- [ ] Projection line: "a este ritmo: {months} meses" — `monthsToGoal` fed by `monthlySweepTotal(ledger, margin)` (spec #24: hand-recomputable from the visible ledger)
 - [ ] PortfolioCard ×3 risk levels (FCI conservador/moderado/agresivo) — educational copy, **no named instruments**; active one highlighted; "fondos simulados — sandbox" label
 - [ ] RecalcNote: "tu margen se reajusta solo: liquidez prevista {X} vs real {Y}" (mocked delta)
-- [ ] **The one celebration moment:** when proposal is accepted (Phase 4 hook), the round-up ring ticks up with a single well-timed animation — habit formation framing, no confetti spam
-- [ ] **Acceptance:** the emotional payoff screen — a judge sees spending becoming a concrete goal
+- [ ] **The one celebration moment:** the first sweep landing in the ring (from Task 6.1) gets the single well-timed animation — habit formation framing, no confetti spam
+- [ ] **Acceptance:** the emotional payoff screen — spending visibly becomes a concrete goal, every number hand-checkable
 - [ ] **Commit:** `feat: goal progress + simulated portfolio`
 
 ---
@@ -484,7 +518,7 @@ fetch('/api/chat', {
 
 **Files:** Finalize `docs/demo-script.md`; final pass on `README.md`, `context.md` decisions log
 
-- [ ] Exact run-of-show: open deployed URL → wallet beat (B2B thesis line) → tap tile → onboarding (goal: "compu de $500k") → 3–4 **exact copy-paste live prompts** with what to say over each stream → switch to Mi meta → closing line. Per-step fallback action ("if frozen >6s: it auto-switches — keep talking")
+- [ ] Exact run-of-show: open deployed URL → wallet beat (B2B thesis line) → tap tile → onboarding (goal: "compu de $500k") → 2–3 **exact copy-paste live prompts** with what to say over each stream → back to wallet: pay Café Martínez, watch `+$305` land ("sin roundai: $0") → Mi meta (ring already moved by exactly that sweep) → closing line. Per-step fallback action ("if frozen >6s: it auto-switches — keep talking")
 - [ ] Pre-demo checklist: hotspot on, `/api/health?ping=1` warm, DND, clean fullscreen browser profile, devtools closed, one pre-loaded tab, hard refresh
 - [ ] **Verify:** 2 timed rehearsals on the DEPLOYED URL — one with wifi killed mid-chat (fallback must be seamless)
 - [ ] `pnpm build && pnpm test` green; deployed URL spot-check on a 1280×720 window
@@ -494,7 +528,7 @@ fetch('/api/chat', {
 
 ## Self-review (writing-plans checklist)
 
-- **Spec coverage:** decisions #1–22 each map to a task (✓ traced); all kickoff phases + doc set covered; KB-dependent items marked.
+- **Spec coverage:** decisions #1–24 each map to a task (✓ traced); all kickoff phases + doc set + payment-flow scope addition covered; KB-dependent items marked.
 - **No placeholders:** the only deliberate TBDs are Phase-7 demo prompts (depend on built product) and final design-token values (frontend-design decision at build time, recorded in `design.md`).
 - **Type consistency:** `UserProfile`/`RiskProfile`/`ValidationError` live in `src/lib/roundup.ts` (types stubbed in Task 1.3, implementations added in Phase 3); `ChatMessage`/`Goal` defined in Task 2.1; all reused verbatim in Tasks 4.x/5.x.
 - **Adversarial review applied (2026-06-06):** a 3-lens review found 2 blockers (demo-transcript created after its importers; assistant-first seeded history would 400 against the Anthropic API) + 18 lesser findings — all fixed in this revision.
