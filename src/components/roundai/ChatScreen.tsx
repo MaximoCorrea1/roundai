@@ -171,7 +171,7 @@ export function ChatScreen({
       ) : (
         <div className="flex flex-1 items-center justify-center px-8 text-center">
           <p className="font-display text-[15px] font-medium text-roundai-green/45">
-            Tu meta, en breve.
+            {strings.goal.comingSoon}
           </p>
         </div>
       )}

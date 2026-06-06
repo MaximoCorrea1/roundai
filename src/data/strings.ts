@@ -64,6 +64,7 @@ export const strings = {
     pace: 'a este ritmo: {meses} meses',
     sandbox: 'fondos simulados — sandbox',
     recalc: 'tu margen se reajusta solo: liquidez prevista {prevista} vs real {real}',
+    comingSoon: 'Tu meta, en breve.',
   },
   // Proposal bubbles — interpolated in src/lib/proposal.ts from roundup.ts
   // outputs ONLY. Components never see these directly; they receive ready
