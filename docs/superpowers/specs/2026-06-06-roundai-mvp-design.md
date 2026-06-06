@@ -24,7 +24,7 @@ on-brand, chat powered by the real Claude API behind a secure server-side proxy.
 | 1 | Knowledge base | Build docs from kickoff summary now; deepen when `roundai-knowledge-base.md` lands | File missing from repo; nothing blocks |
 | 2 | Model | `claude-sonnet-4-6` pinned in `src/lib/config.ts` | Kickoff's `claude-sonnet-4-20250514` is deprecated (retires 2026-06-15 — 9 days). Sonnet > Opus here: faster first token, cheaper, chat-appropriate |
 | 3 | Demo fallback | DEMO_MODE: canned transcript, fake-streamed; client auto-falls back on stream error or >6s stall; live Claude is the default path | The AI centerpiece must not die on venue wifi |
-| 4 | Default profile | Generic salaried user, medium liquidity (placeholder numbers; Maximo provides real profiles) | Maximo's call; profile swap is trivial by design |
+| 4 | Default profile | Generic salaried user, medium liquidity (placeholder numbers; Maximo provides real profiles) | Maximo's call; swap trivial by design — but lock it before the demo (the canned fallback echoes the active profile's figures) |
 | 5 | Deployment | Vercel, throwaway deploy on Day 1; rehearse + present from deployed URL; localhost backup | Surfaces env/pipeline issues early, not on demo day |
 | 6 | Margin semantics | Stored as **fraction** (`0.05`), name `marginFraction`, clamp [0.01, 0.20]; % only at display | Percent/fraction ambiguity silently makes 100× errors |
 | 7 | Risk mapping | Closed table `{conservador: 0.03, moderado: 0.07, agresivo: 0.12}`; unknown → moderado | Table beats formula: testable, and the coach gets the exact numbers |
@@ -34,7 +34,7 @@ on-brand, chat powered by the real Claude API behind a secure server-side proxy.
 | 11 | API runtime | Node runtime, `force-dynamic`, `maxDuration = 30` | Edge buys nothing here; SDK behaves best on Node |
 | 12 | Transport | `client.messages.stream()` → `ReadableStream` of raw text deltas; client reads `response.body.getReader()` | Live-typing feel; minimal robust transport; SSE can't POST |
 | 13 | Abuse bounds | `max_tokens ≈ 1000`, reject >24 history messages; Maximo sets Anthropic console spend cap | Public unauthenticated proxy = open relay otherwise |
-| 14 | Handoff to live chat | Synthesized context: server recomputes numbers from `profileId` + goal, injects ONE context block; templated onboarding appears as one assistant history turn | No client-trusted math; avoids Sonnet 4.6 trailing-prefill 400; no confusing UI-bubble replay |
+| 14 | Handoff to live chat | Synthesized context: server recomputes numbers from `profileId` + goal, injects ONE context block; seeded history = one synthetic **user** turn + one assistant onboarding summary, both built from `roundup.ts` outputs; route enforces first-role=user, strict alternation, last-role=user | No client-trusted math; satisfies the API's first-message-must-be-user rule AND avoids Sonnet 4.6 trailing-prefill 400; no UI-bubble replay |
 | 15 | Thinking/params | No `thinking`, no `temperature`/`top_p` (defaults only) | Fast first token; legacy params 400 on newer models |
 | 16 | Language | All product copy es-AR voseo in `src/data/strings.ts`; one-file switch | Authentic to AR judges; centralized = cheap to change |
 | 17 | ARS format | `Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })`; tests normalize the NBSP after `$` | Verified locally: emits `$ 1.234.567` with non-breaking space |
@@ -83,8 +83,10 @@ GET /api/health → { ok, model, demoMode }; ?ping=1 does a 1-token live call (p
 4. **proposal** — templated bubbles rendered locally with REAL numbers from `lib/roundup.ts`:
    liquidity read (baja/media/alta), proposed margin, monthsToGoal (or the honest "no llegás en
    ese plazo" branch). User consents → button "Dale, activalo".
-5. **live** — everything from here hits `/api/chat`. History seeds with ONE assistant turn
-   summarizing what the coach already said (so Claude knows its prior statements).
+5. **live** — everything from here hits `/api/chat`. History seeds with a synthetic **user**
+   turn (the goal selection) + ONE assistant turn summarizing what the coach already said —
+   both templated from `roundup.ts` outputs, alternation-safe (the API requires the first
+   message to be `user`; trailing assistant turns 400 on Sonnet 4.6).
 
 ### Pure module contract — `src/lib/roundup.ts`
 

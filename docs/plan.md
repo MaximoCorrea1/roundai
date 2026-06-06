@@ -20,7 +20,7 @@ Claude with streaming and a DEMO_MODE fallback. Spec: `docs/superpowers/specs/20
 
 | Plan phase | Kickoff phase | What ships | Est. |
 |---|---|---|---|
-| 0 | 0 | Docs drafts, scaffold, API stubs, Day-1 Vercel deploy | 0.5 day |
+| 0 | 0 | Scaffold + stubs + Day-1 Vercel deploy (0.25) · judged doc drafts (0.5, time-boxed) | 0.75 day |
 | 1 | 1 | Phone frame + Nimbo wallet home (frontend-design) | 0.5 day |
 | 2 | 2 | Miniapp transition + chat UI shell (frontend-design) | 0.25 day |
 | 3 | 5a | `roundup.ts` pure module — TDD | 0.25 day |
@@ -93,14 +93,15 @@ export const MAX_TOKENS = 1000
 export const MAX_HISTORY = 24
 export const MAX_TOTAL_CHARS = 16_000
 export const TNA_SIMULADA = 0.35 // placeholder illustrative annual rate, always labeled "simulado"
+export const SENTINEL = '\u0000' // impossible in real model output; client switches to fallback on sight
 ```
 
-- [ ] **Write `/api/health` stub** returning `{ ok: true, model: MODEL, demoMode: process.env.DEMO_MODE === '1', keyPresent: Boolean(process.env.ANTHROPIC_API_KEY) }` (no key value ever)
+- [ ] **Write `/api/health` stub** returning `{ ok: true, model: MODEL, demoMode: process.env.DEMO_MODE === '1', keyPresent: Boolean(process.env.ANTHROPIC_API_KEY) }` (no key value ever) — with `export const runtime = 'nodejs'` + `export const dynamic = 'force-dynamic'` so the values reflect runtime env, never a build-time snapshot
 - [ ] **Write `/api/chat` stub** echoing `{ todo: true }` with the runtime exports already in place (`runtime = 'nodejs'`, `dynamic = 'force-dynamic'`, `maxDuration = 30`)
 - [ ] **Verify:** `curl localhost:3000/api/health` → `keyPresent` reflects `.env.local`
 - [ ] **Commit:** `feat: health + chat route stubs, pinned model config`
 
-### Task 0.3: Doc set drafts (judged deliverables — draft quality, real content)
+### Task 0.3: Doc set drafts (judged deliverables — draft quality, real content; **time-box ~0.5 day**, deepen during later phases / idle moments)
 
 **Files:** Create `README.md`, `vision.md`, `context.md`, `brand.md`, `design.md`,
 `docs/architecture.md`, `docs/coach-system-prompt.md`, `docs/demo-script.md`
@@ -132,7 +133,7 @@ export const TNA_SIMULADA = 0.35 // placeholder illustrative annual rate, always
 **Files:** Modify `src/app/globals.css`, `src/app/layout.tsx`; sync `design.md`
 
 - [ ] Define `@theme` tokens: roundai layer (deep green ≈`#0B3D2E`, cream ≈`#FAF5EC`, lime accent ≈`#C8F560`) + Nimbo layer (neutral slate/blue neobank) + spacing/radius/shadow scale. Final values are a frontend-design decision — record them in `design.md` when locked
-- [ ] Load fonts via `next/font` (self-hosted at build = projector-safe): characterful display + refined body + `font-variant-numeric: tabular-nums` for ALL money. **Banned: Inter/Roboto/Arial/system stacks**
+- [ ] Load fonts via `next/font` (self-hosted at build = projector-safe): characterful display + refined body + `font-variant-numeric: tabular-nums` for ALL money. **Banned: Inter/Roboto/Arial/system stacks.** Variable-Google-font gotcha: `import { Bricolage_Grotesque } from 'next/font/google'` needs `{ subsets: ['latin'] }` and **no `weight` key** (variable-only fonts throw a build error if you pass a weight array); expose as a CSS variable wired into the `@theme` tokens
 - [ ] **Commit:** `feat: design tokens + typography`
 
 ### Task 1.2: PhoneFrame component
@@ -149,7 +150,8 @@ export const TNA_SIMULADA = 0.35 // placeholder illustrative annual rate, always
 
 **Files:** Create `src/data/profiles.ts`, `src/data/transactions.ts`, `src/data/strings.ts`
 
-- [ ] `profiles.ts` — `UserProfile` type imported from `@/lib/roundup` (type only; module lands Phase 3 — define the interface file-first in `src/lib/roundup.ts` with types + empty impls if needed). Three profiles, **default `mati` (generic salaried, medium liquidity)**:
+- [ ] **First (unconditional):** create `src/lib/roundup.ts` containing ONLY the type declarations — `RiskProfile`, `UserProfile`, `class ValidationError extends Error` — no function implementations yet (those land in Phase 3 via TDD). This keeps one home for the types AND a green build from Phase 1 on
+- [ ] `profiles.ts` — imports `UserProfile` from `@/lib/roundup`. Three profiles, **default `mati` (generic salaried, medium liquidity)**:
 
 ```ts
 export const profiles: UserProfile[] = [
@@ -216,14 +218,14 @@ export const ACTIVE_PROFILE_ID = 'mati' // swap here (placeholder numbers — Ma
 
 ### Task 3.1: Vitest setup
 
-- [ ] `vitest.config.ts` (node env, include `src/lib/**/*.test.ts`); `pnpm test` runs green on an empty suite placeholder
+- [ ] `vitest.config.ts` (node env, include `src/lib/**/*.test.ts`); `pnpm test` runs green on an empty suite placeholder. Keep lib tests on RELATIVE imports — vitest doesn't resolve tsconfig `@/` paths without a plugin, not worth adding for one module
 - [ ] **Commit:** `test: vitest setup`
 
 ### Task 3.2–3.8: TDD cycle per function — for EACH: write failing test → `pnpm test` (expect FAIL) → minimal impl → `pnpm test` (expect PASS) → commit
 
 **Files:** Create `src/lib/roundup.ts`, `src/lib/roundup.test.ts`
 
-- [ ] **3.2 `savingsCapacity` + types** — avg of `liquidezFinDeMes`; `[]` → 0
+- [ ] **3.2 `savingsCapacity`** (types already exist from Task 1.3 — Phase 3 only ADDS implementations to the typed file) — avg of `liquidezFinDeMes`; `[]` → 0
 
 ```ts
 test('savingsCapacity averages 6 months of liquidity', () => {
@@ -244,19 +246,25 @@ test('rejects percent-style input', () => {
 
 - [ ] **3.4 `computeOptimalMargin`** — `clamp(min(RISK_TO_MARGIN[risk], capacity/gasto))`; capacity ≤ 0 → 0. Tests: the 3 seed profiles (moderado capped by capacity vs not), zero-capacity profile → 0
 - [ ] **3.5 `monthlyContribution` + `isSustainable`** — contribution ≤ capacity && margin > 0; negative inputs throw `ValidationError`
-- [ ] **3.6 `monthsToGoal`** — `{ reachable, months }`; contribution ≤ 0 → `{ reachable: false, months: null }`; `Math.ceil(goal / contribution)`; test the honest branch with `lu` + meta $2.000.000
+- [ ] **3.6 `monthsToGoal`** — `{ reachable, months }`; contribution ≤ 0 → `{ reachable: false, months: null }`; `Math.ceil(goal / contribution)`
 
 ```ts
-test('unrealistic goal returns honest unreachable', () => {
+test('zero contribution returns unreachable — never Infinity/NaN', () => {
   expect(monthsToGoal(lu, 0, 2_000_000)).toEqual({ reachable: false, months: null })
 })
 test('months are ceiled, never under-promised', () => {
   // mati @ 7% of 1.180.000 = 82.600/mes → 500.000 / 82.600 = 6.05 → 7 meses
   expect(monthsToGoal(mati, 0.07, 500_000)).toEqual({ reachable: true, months: 7 })
 })
+test('honest branch: goal absurdly slow at a SUSTAINABLE margin (coach must offer alternatives)', () => {
+  // lu's sustainable margin ≈ 0.02 → ~$17.500/mes; $2.000.000 toma ~115 meses
+  const r = monthsToGoal(lu, computeOptimalMargin(lu), 2_000_000)
+  expect(r.reachable).toBe(true)
+  expect(r.months!).toBeGreaterThan(100) // feeds the "ajustá plazo / arrancá más chico" copy
+})
 ```
 
-- [ ] **3.7 `formatARS` / `formatPct` / `liquidityBand`** — es-AR output; **normalize NBSP in assertions** (`.replace(/ /g, ' ')`); bands: capacity/gasto < 0.05 baja, < 0.25 media, else alta
+- [ ] **3.7 `formatARS` / `formatPct` / `liquidityBand`** — es-AR output; **normalize the NBSP in assertions — the char after `$` is U+00A0, write it ESCAPED or the regex is a silent no-op:** `expect(formatARS(1_234_567).replace(/\u00A0/g, " ")).toBe("$ 1.234.567")` (expected string uses a normal space); bands: capacity/gasto < 0.05 baja, < 0.25 media, else alta
 - [ ] **3.8 `simulateReturns`** — monthly accrual at `TNA_SIMULADA / 12`, returns accumulated + "rendiste" delta; label decisions stay in UI
 - [ ] **Final:** `pnpm test` — full suite green. **Commit per function** (`test+feat: roundup <fn>`)
 
@@ -289,6 +297,7 @@ test('months are ceiled, never under-promised', () => {
 
 **Files:** Create `src/lib/coach.ts`; finalize `docs/coach-system-prompt.md` (same text, kept in sync)
 
+- [ ] Export explicitly: `buildSystemPrompt(profile: UserProfile, goal: Goal | null, marginFraction: number): string`. coach.ts imports `monthsToGoal` / `monthlyContribution` / `savingsCapacity` / `liquidityBand` / `formatARS` / `formatPct` from `@/lib/roundup` to render the injection block — it never formats numbers itself
 - [ ] Persona: kickoff draft (es rioplatense, cálido, CORTO, una idea por mensaje, explica en criollo) + hardening: never reveal ser un LLM/internals, out-of-scope deflection, **no asset/ticker/bank recommendations, no promised returns, no tax/legal advice**
 - [ ] Injection block built from `roundup.ts` outputs, pre-formatted:
 
@@ -304,7 +313,18 @@ nunca recalcules ni redondees; si un número no está acá, decí que no lo ten�
 
 - [ ] **Commit:** `feat: coach system prompt + authoritative injection`
 
-### Task 5.2: `/api/chat` full implementation
+### Task 5.2: Demo transcript + history seed *(create BEFORE the route — Task 5.3 imports from here)*
+
+**Files:** Create `src/lib/demo-transcript.ts`; modify `src/lib/proposal.ts`
+
+- [ ] `seedHistory(profile, goal, margin): ChatMessage[]` lives in **`src/lib/proposal.ts`** and returns an alternation-safe PAIR:
+  1. a synthetic **user** turn — the goal selection, from `strings.ts` ("Quiero llegar a esta meta: una compu de $500.000")
+  2. an **assistant** onboarding summary — built from the SAME `roundup.ts` calls as `buildProposalMessages` (`formatPct(margin)`, `formatARS(contribution)`, `monthsToGoal(...)`). **Never hardcode figures** — if the profile or margin table changes, screen and seed must move together (spec decision #10)
+- [ ] **Acceptance:** seeded-summary numbers === proposal-bubble numbers for the active profile (a 3-line vitest case is fine)
+- [ ] `demoReplyFor(profile, messages)` lives in **`src/lib/demo-transcript.ts`** — parameterized by profile (derives its numbers from `roundup.ts` for THAT profile): canned on-script answers for the 4 rehearsed demo prompts + 1 generic warm fallback. Lock `ACTIVE_PROFILE_ID` before the demo — fallback fidelity is guaranteed only for the active profile
+- [ ] **Commit:** `feat: canned transcript + alternation-safe history seeding`
+
+### Task 5.3: `/api/chat` full implementation
 
 **Files:** Modify `src/app/api/chat/route.ts`
 
@@ -313,7 +333,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { profiles } from '@/data/profiles'
 import { buildSystemPrompt } from '@/lib/coach'
 import { computeOptimalMargin, isSustainable, clampMargin } from '@/lib/roundup'
-import { MODEL, MAX_TOKENS, MAX_HISTORY, MAX_TOTAL_CHARS } from '@/lib/config'
+import { MODEL, MAX_TOKENS, MAX_HISTORY, MAX_TOTAL_CHARS, SENTINEL } from '@/lib/config'
 import { demoReplyFor } from '@/lib/demo-transcript'
 
 export const runtime = 'nodejs'
@@ -322,42 +342,62 @@ export const maxDuration = 30
 
 const client = new Anthropic() // reads ANTHROPIC_API_KEY server-side
 
+type Msg = { role: 'user' | 'assistant'; content: string }
+
+// The Anthropic API 400s on: first message not 'user', consecutive same-role turns,
+// and (on Sonnet 4.6) a trailing assistant turn (prefill). Reject all of it here —
+// otherwise a malformed seed silently pushes every live call into the fallback.
+function historyError(messages: unknown): string | null {
+  if (!Array.isArray(messages) || messages.length === 0) return 'empty history'
+  if (messages.length > MAX_HISTORY) return 'history too long'
+  let total = 0
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i] as Msg
+    if ((m?.role !== 'user' && m?.role !== 'assistant') || typeof m?.content !== 'string') return 'bad message shape'
+    if (i > 0 && (messages[i - 1] as Msg).role === m.role) return 'roles must alternate'
+    total += m.content.length
+  }
+  if ((messages[0] as Msg).role !== 'user') return 'first message must be user'
+  if ((messages[messages.length - 1] as Msg).role !== 'user') return 'last message must be user'
+  if (total > MAX_TOTAL_CHARS) return 'history too large'
+  return null
+}
+
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null)
   const profile = profiles.find((p) => p.id === body?.profileId)
-  const messages = body?.messages
-  if (!profile || !Array.isArray(messages) || messages.length === 0)
-    return Response.json({ error: 'bad request' }, { status: 400 })
-  if (messages.length > MAX_HISTORY) return Response.json({ error: 'history too long' }, { status: 400 })
-  const totalChars = messages.reduce((n: number, m: any) => n + String(m?.content ?? '').length, 0)
-  if (totalChars > MAX_TOTAL_CHARS) return Response.json({ error: 'history too large' }, { status: 400 })
+  if (!profile) return Response.json({ error: 'unknown profile' }, { status: 400 })
+  const messages = body?.messages as Msg[]
+  const invalid = historyError(messages)
+  if (invalid) return Response.json({ error: invalid }, { status: 400 })
 
   // Never trust client math: re-validate the agreed margin, else recompute
   let margin: number
   try { margin = clampMargin(Number(body?.marginFraction)) } catch { margin = computeOptimalMargin(profile) }
   if (!isSustainable(profile, margin)) margin = computeOptimalMargin(profile)
 
-  if (process.env.DEMO_MODE === '1') return streamPlain(demoReplyFor(messages))
+  if (process.env.DEMO_MODE === '1') return streamPlain(demoReplyFor(profile, messages))
 
   const system = buildSystemPrompt(profile, body?.goal ?? null, margin)
-  const stream = client.messages.stream({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
-    system,
-    messages: messages.map((m: any) => ({ role: m.role, content: String(m.content) })),
-  })
-
   const encoder = new TextEncoder()
   return new Response(
     new ReadableStream({
       async start(controller) {
         try {
+          // created INSIDE the try: auth/rate-limit failures become a clean
+          // sentinel + close (client falls back) — never a hung reader
+          const stream = client.messages.stream({
+            model: MODEL,
+            max_tokens: MAX_TOKENS,
+            system,
+            messages: messages.map((m) => ({ role: m.role, content: m.content })),
+          })
           for await (const event of stream) {
             if (event.type === 'content_block_delta' && event.delta.type === 'text_delta')
               controller.enqueue(encoder.encode(event.delta.text))
           }
         } catch {
-          controller.enqueue(encoder.encode('⚠')) // sentinel: client switches to fallback
+          controller.enqueue(encoder.encode(SENTINEL)) // client switches to canned fallback
         } finally {
           controller.close() // never leave the reader hanging
         }
@@ -384,31 +424,40 @@ function streamPlain(text: string): Response {
 }
 ```
 
-- [ ] **Verify (manual):** `curl -N` a real conversation; bad payloads → 400; `DEMO_MODE=1 pnpm dev` streams canned text
-- [ ] **Commit:** `feat: streaming Claude proxy with validation + demo mode`
+- [ ] **Verify (manual)** *(live `curl` requires Maximo: `ANTHROPIC_API_KEY` in `.env.local` + console spend cap already set; keyless path: `DEMO_MODE=1`)*: `curl -N` a real conversation streams; consecutive same-role / assistant-first / assistant-last history → 400; `DEMO_MODE=1 pnpm dev` streams canned text
+- [ ] **Commit:** `feat: streaming Claude proxy with strict validation + demo mode`
 
-### Task 5.3: Client chat hook with watchdog fallback
+### Task 5.4: Client chat hook with watchdog fallback
 
 **Files:** Create `src/lib/useChat.ts`; modify `AppShell.tsx`, `ChatScreen.tsx`
 
-- [ ] `sendMessage(text)`: push user msg → `coachStatus: 'typing'` → POST `/api/chat` → read `response.body.getReader()`, `APPEND_DELTA` per chunk (`coachStatus: 'streaming'`)
-- [ ] **Watchdog:** no first byte in **6s**, fetch rejects, non-OK status, or sentinel `⚠` received → `coachStatus: 'fallback'` → fake-stream the matching canned reply from `demo-transcript.ts` locally. The judge never sees a frozen chat
-- [ ] History sent = onboarding summary turn + live turns (see Task 5.4), capped client-side at 24
+- [ ] `sendMessage(text)`: push user msg → `coachStatus: 'typing'` → POST with this EXPLICIT body (the route 400s without `profileId`):
+
+```ts
+const profile = profiles.find((p) => p.id === ACTIVE_PROFILE_ID)! // both from '@/data/profiles'
+fetch('/api/chat', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    profileId: ACTIVE_PROFILE_ID,
+    goal: state.goal,
+    marginFraction: state.marginFraction,
+    // seed pair first, then live turns — always ends on the just-typed user turn
+    messages: [...seedHistory(profile, state.goal!, state.marginFraction!), ...liveTurns],
+  }),
+})
+```
+
+  then read `response.body.getReader()`, dispatch `APPEND_DELTA` per chunk (`coachStatus: 'streaming'`)
+- [ ] **Watchdog → fallback** (`coachStatus: 'fallback'`) on ANY of: no first byte in **6s** · fetch rejects · non-OK status · chunk contains `SENTINEL` (import from `@/lib/config`) → fake-stream `demoReplyFor(profile, messages)` locally. The judge never sees a frozen chat
+- [ ] History capped client-side at 24: drop the oldest live PAIRS, always keep the 2-message seed
 - [ ] **Commit:** `feat: streaming chat hook with auto-fallback`
-
-### Task 5.4: Demo transcript + history seed
-
-**Files:** Create `src/lib/demo-transcript.ts`; modify `src/lib/proposal.ts`
-
-- [ ] `seedHistory(profile, goal, margin): ChatMessage[]` — ONE assistant turn summarizing the onboarding ("Te propuse un margen de 7% (~$82.600/mes) para tu meta de $500.000 — llegás en 7 meses…") so Claude knows its prior statements. Never replay UI bubbles
-- [ ] `demoReplyFor(messages)`: canned, on-script answers for the 4 rehearsed demo prompts + 1 generic warm fallback; same numbers as `roundup.ts` outputs for `mati`
-- [ ] **Commit:** `feat: canned transcript + history seeding`
 
 ### Task 5.5: Health ping + page pre-warm
 
-- [ ] `/api/health?ping=1` → 1-token `client.messages.create` wrapped in try/catch → `{ ok, live: true|false }`
+- [ ] `/api/health?ping=1` → 1-token `client.messages.create` wrapped in try/catch → `{ ok, live: true|false }` (route already exports `runtime`/`dynamic` from Task 0.2)
 - [ ] `AppShell` fires `fetch('/api/health')` on mount (silent serverless pre-warm)
-- [ ] **Verify:** adversarial prompts ("¿compro bitcoin?", "¿qué acción me recomendás?") get compliant deflections; numbers quoted match the screen
+- [ ] **Verify** *(requires Maximo: live key)*: adversarial prompts ("¿compro bitcoin?", "¿qué acción me recomendás?") get compliant deflections; numbers quoted match the screen
 - [ ] **Commit:** `feat: health ping + pre-warm`
 
 ---
@@ -431,7 +480,7 @@ function streamPlain(text: string): Response {
 
 ## Phase 7 — Demo readiness
 
-### Task 7.1: Demo script + rehearsal
+### Task 7.1: Demo script + rehearsal *(requires Maximo: deployed env + live `ANTHROPIC_API_KEY`)*
 
 **Files:** Finalize `docs/demo-script.md`; final pass on `README.md`, `context.md` decisions log
 
@@ -447,4 +496,5 @@ function streamPlain(text: string): Response {
 
 - **Spec coverage:** decisions #1–22 each map to a task (✓ traced); all kickoff phases + doc set covered; KB-dependent items marked.
 - **No placeholders:** the only deliberate TBDs are Phase-7 demo prompts (depend on built product) and final design-token values (frontend-design decision at build time, recorded in `design.md`).
-- **Type consistency:** `UserProfile`/`ChatMessage`/`Goal` defined once (Tasks 1.3/2.1), reused verbatim in Tasks 3.x/4.x/5.x.
+- **Type consistency:** `UserProfile`/`RiskProfile`/`ValidationError` live in `src/lib/roundup.ts` (types stubbed in Task 1.3, implementations added in Phase 3); `ChatMessage`/`Goal` defined in Task 2.1; all reused verbatim in Tasks 4.x/5.x.
+- **Adversarial review applied (2026-06-06):** a 3-lens review found 2 blockers (demo-transcript created after its importers; assistant-first seeded history would 400 against the Anthropic API) + 18 lesser findings — all fixed in this revision.

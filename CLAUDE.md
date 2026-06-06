@@ -37,7 +37,7 @@ pnpm build        # production build — must pass before any deploy/done claim
 ## Hard rules
 
 - **`ANTHROPIC_API_KEY` is server-side only** — lives in `.env.local` (gitignored) + Vercel env.
-  Only `app/api/chat/route.ts` and `app/api/health/route.ts` touch the Anthropic SDK. Never call
+  Only `src/app/api/chat/route.ts` and `src/app/api/health/route.ts` touch the Anthropic SDK. Never call
   Anthropic from client code; never expose the key.
 - **Model:** `claude-sonnet-4-6`, pinned in ONE constant (`src/lib/config.ts`). Do not use
   `claude-sonnet-4-20250514` (deprecated, retires 2026-06-15). No `temperature`/`top_p`/prefills.
@@ -59,12 +59,17 @@ pnpm build        # production build — must pass before any deploy/done claim
 ```
 src/app/api/chat/route.ts    Claude streaming proxy (+ DEMO_MODE fallback)
 src/app/api/health/route.ts  pre-warm ping + key sanity check
+src/components/AppShell.tsx  in-phone navigation state machine (useReducer)
 src/components/phone/        iPhone frame (bezel, status bar, dynamic island)
 src/components/wallet/       fake host-wallet home screen ("Nimbo")
 src/components/roundai/      miniapp: chat, onboarding options, goal/portfolio screens
-src/lib/roundup.ts           ⭐ pure round-up/margin math + es-AR formatting (TDD)
+src/lib/config.ts            pinned MODEL + caps + stream sentinel (one place)
+src/lib/roundup.ts           ⭐ pure math + es-AR formatting + UserProfile type (TDD)
 src/lib/coach.ts             system prompt assembly + authoritative-numbers injection
+src/lib/proposal.ts          templated proposal + alternation-safe history seed
+src/lib/useChat.ts           streaming chat hook (watchdog → canned fallback)
 src/lib/demo-transcript.ts   canned conversation (DEMO_MODE + fixture)
-src/data/profiles.ts         UserProfile type + 3 hardcoded profiles
+src/data/profiles.ts         3 hardcoded profiles (type imported from lib/roundup)
+src/data/transactions.ts     fake wallet ledger (round-ups = illustration only)
 src/data/strings.ts          ALL UI copy (es-AR)
 ```
