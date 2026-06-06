@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useReducer, useState } from 'react'
-import type { Goal, ChatMessage } from '@/lib/chat-types'
+import type { Goal, ChatMessage, SavedGoal } from '@/lib/chat-types'
+import type { RiskProfile } from '@/lib/roundup'
 import type { Transaction } from '@/data/transactions'
 import { WalletHome } from '@/components/wallet/WalletHome'
 import { ChatScreen } from '@/components/roundai/ChatScreen'
@@ -31,7 +32,16 @@ const BALANCE_INICIAL = 326_500
 
 type Screen = 'wallet' | 'miniapp'
 type MiniView = 'chat' | 'goal'
-type ChatPhase = 'greeting' | 'goalSelect' | 'goalInput' | 'proposal' | 'live'
+// New iteration-2 flow (decisions #25, #26): greeting → quiz → goalSelect →
+// goalInput → timeline → proposal → live.
+type ChatPhase =
+  | 'greeting'
+  | 'quiz'
+  | 'goalSelect'
+  | 'goalInput'
+  | 'timeline'
+  | 'proposal'
+  | 'live'
 
 export interface AppState {
   screen: Screen
@@ -39,6 +49,16 @@ export interface AppState {
   chatPhase: ChatPhase
   goal: Goal | null
   marginFraction: number | null
+  // Investor profile DECLARED by the user via the quiz (decision #26) — NOT
+  // inferred. Overrides profile.riskProfile everywhere downstream (proposal caps,
+  // coach injection, portfolio highlight). null until the quiz completes.
+  sessionRisk: RiskProfile | null
+  // Committed goals (decision #29): exactly one active goal receives sweeps.
+  // `goal` (above) stays populated for backward-compat this wave (8.D migrates).
+  goals: SavedGoal[]
+  activeGoalId: string | null
+  // Round-up master switch (default ON) — 8.C's payment sheet consumes it.
+  roundupEnabled: boolean
   messages: ChatMessage[]
   coachStatus: 'idle' | 'typing' | 'streaming' | 'fallback'
   payment: 'idle' | 'sheet' | 'success'
@@ -57,9 +77,14 @@ export interface AppState {
 export type Action =
   | { type: 'OPEN_MINIAPP' }
   | { type: 'BACK_TO_WALLET' }
+  | { type: 'SET_RISK'; risk: RiskProfile }
   | { type: 'SELECT_GOAL'; goal: Goal; phase: ChatPhase }
   | { type: 'SET_AMOUNT'; amount: number }
-  | { type: 'ACCEPT_PROPOSAL'; marginFraction: number }
+  | { type: 'SET_TIMELINE'; months: number }
+  | { type: 'SET_MARGIN'; marginFraction: number }
+  | { type: 'ACCEPT_PROPOSAL'; marginFraction: number; savedGoal: SavedGoal }
+  | { type: 'TOGGLE_ROUNDUP' }
+  | { type: 'SET_ACTIVE_GOAL'; id: string }
   | { type: 'PUSH_MESSAGE'; message: ChatMessage }
   | { type: 'APPEND_DELTA'; delta: string }
   | { type: 'SET_STATUS'; status: AppState['coachStatus'] }
@@ -75,6 +100,10 @@ const initialState: AppState = {
   chatPhase: 'greeting',
   goal: null,
   marginFraction: null,
+  sessionRisk: null,
+  goals: [],
+  activeGoalId: null,
+  roundupEnabled: true,
   messages: [],
   coachStatus: 'idle',
   payment: 'idle',
@@ -92,23 +121,49 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'BACK_TO_WALLET':
       return { ...state, screen: 'wallet' }
 
+    case 'SET_RISK':
+      // Quiz result: declare the session investor profile, advance to goalSelect.
+      return { ...state, sessionRisk: action.risk, chatPhase: 'goalSelect' }
+
     case 'SELECT_GOAL':
       return { ...state, goal: action.goal, chatPhase: action.phase }
 
     case 'SET_AMOUNT':
+      // Amount captured → on to the timeline step (decision #25). NOT proposal.
       return {
         ...state,
         goal: state.goal ? { ...state.goal, amount: action.amount } : state.goal,
+        chatPhase: 'timeline',
+      }
+
+    case 'SET_TIMELINE':
+      // Plazo captured → proposal. planGoal drives the margin downstream.
+      return {
+        ...state,
+        goal: state.goal ? { ...state.goal, months: action.months } : state.goal,
         chatPhase: 'proposal',
       }
 
+    case 'SET_MARGIN':
+      // Tweaker commit (decision #27): re-render the proposal at this margin.
+      return { ...state, marginFraction: action.marginFraction }
+
+    case 'TOGGLE_ROUNDUP':
+      return { ...state, roundupEnabled: !state.roundupEnabled }
+
+    case 'SET_ACTIVE_GOAL':
+      return { ...state, activeGoalId: action.id }
+
     case 'ACCEPT_PROPOSAL':
+      // Commit the margin + create the SavedGoal (decision #29), make it active.
       // Live turns begin AFTER the activated-confirmation bubble that ChatScreen
       // pushes immediately after this action (hence +1). Everything up to and
       // including that bubble is onboarding, replaced by seedHistory on the wire.
       return {
         ...state,
         marginFraction: action.marginFraction,
+        goals: [...state.goals, action.savedGoal],
+        activeGoalId: action.savedGoal.id,
         chatPhase: 'live',
         coachStatus: 'idle',
         liveStartIndex: state.messages.length + 1,
