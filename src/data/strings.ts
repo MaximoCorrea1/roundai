@@ -123,6 +123,13 @@ export const strings = {
     done: 'Listo',
     // {monto} = formatARS(sweep) — subline on the badged session txn in the ledger
     ledgerSweep: '+{monto} a tu meta',
+    // ── sheet v2 (spec decision #31) — the toggle IS the counterfactual ──
+    roundupToggle: 'Redondeo roundai',
+    toggleOffHint: 'sin redondeo, tu meta no avanza',
+    // {perfil} = session risk — where the sweep is invested
+    destination: 'va a tu FCI {perfil} · simulado',
+    // {monto} = formatARS of the 12-month value of THIS sweep
+    microProjection: 'este barrido valdría ~{monto} en 12 meses · simulado',
   },
   goal: {
     accumulatedLabel: 'este mes · simulado',
