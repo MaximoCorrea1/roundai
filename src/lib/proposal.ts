@@ -86,6 +86,49 @@ export function buildProposalMessages(profile: UserProfile, goal: Goal): ChatMes
   return messages
 }
 
+/**
+ * Build the alternation-safe seed PAIR injected at the top of the live-chat
+ * history (spec decision #14): one synthetic USER turn (the goal the user picked)
+ * + one ASSISTANT onboarding summary. The summary is built from the SAME
+ * roundup.ts calls as buildProposalMessages — margin, contribution, and the
+ * monthsToGoal projection (or the honest unreachable / slow branch) — so the
+ * seed numbers can NEVER drift from the proposal bubbles on screen. Never
+ * hardcode figures (spec decision #10).
+ *
+ * The /api/chat route enforces first-role=user / strict alternation /
+ * last-role=user; this pair satisfies first-role=user and is followed by the
+ * live user turns, so the whole history stays valid.
+ */
+export function seedHistory(
+  profile: UserProfile,
+  goal: Goal,
+  margin: number,
+): ChatMessage[] {
+  // (1) synthetic USER turn — the goal selection, rendered from strings.
+  const goalLabel = strings.onboarding.goalOptions[goal.type]
+  const userTurn =
+    goal.amount && goal.amount > 0 ? `${goalLabel}, ${formatARS(goal.amount)}` : goalLabel
+
+  // (2) ASSISTANT onboarding summary — same roundup calls as buildProposalMessages.
+  const aporte = monthlyContribution(profile, margin)
+  let summary = `Listo: armamos un margen del ${formatPct(margin)}, que son ~${formatARS(
+    aporte,
+  )} por mes.`
+
+  if (goal.amount && goal.amount > 0) {
+    const { reachable, months } = monthsToGoal(profile, margin, goal.amount)
+    if (reachable && months != null) {
+      summary +=
+        months > MAX_REASONABLE_MONTHS
+          ? ` A ese ritmo sostenible serían ~${months} meses, que es bastante; lo podemos ajustar cuando quieras.`
+          : ` Con eso llegás a tu meta en ~${months} meses, sin contar rendimientos.`
+    }
+  }
+  summary += ' Preguntame lo que quieras.'
+
+  return [{ role: 'user', content: userTurn }, assistant(summary)]
+}
+
 function assistant(content: string): ChatMessage {
   return { role: 'assistant', content }
 }
