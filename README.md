@@ -6,8 +6,7 @@ This repo is the hackathon MVP: a web app that renders an iPhone inside the brow
 
 ## Demo
 
-![roundai demo](docs/assets/demo.gif)
-<!-- [deepen from KB: replace with the final recorded demo GIF once the golden-path flow is built (Phase 7)] -->
+> 🎬 *Demo GIF pending — record during the Phase 7 rehearsal and drop it at `docs/assets/demo.gif`, then restore:* `![roundai demo](docs/assets/demo.gif)`
 
 ### 30-second narrative
 

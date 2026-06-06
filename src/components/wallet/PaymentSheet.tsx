@@ -113,10 +113,15 @@ export function PaymentSheet({
           </div>
         )}
 
-        {/* confirm */}
+        {/* confirm — ref guard hardens against synthetic same-tick double-fire */}
         <button
           type="button"
-          onClick={() => onConfirm(PAID_TX, sweep)}
+          onClick={(e) => {
+            const btn = e.currentTarget
+            if (btn.dataset.submitted) return
+            btn.dataset.submitted = '1'
+            onConfirm(PAID_TX, sweep)
+          }}
           className="mt-1 flex w-full items-center justify-center gap-2 rounded-full bg-roundai-green py-3.5 text-[15px] font-semibold text-lime shadow-[0_10px_26px_-12px_rgba(7,42,32,0.7)] transition-transform active:scale-[0.985]"
         >
           {p.confirm}
