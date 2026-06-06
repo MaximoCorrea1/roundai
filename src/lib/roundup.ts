@@ -100,6 +100,80 @@ export function monthsAtRate(
 }
 
 /**
+ * Plan a goal from its deadline (spec decision #25): the required monthly
+ * amount is `amount / months`, and we classify it against two caps —
+ * `capacityCap = savingsCapacity / gastoMensual` (what the user can actually
+ * sustain) and `riskCap = RISK_TO_MARGIN[risk]` (what their stated investor
+ * profile allows).
+ *
+ * Tri-state feasibility:
+ * - `comodo`: requiredFrac ≤ min(capacityCap, riskCap) — margin is exactly
+ *   what the deadline needs (floored at 1%), reached on time.
+ * - `ajustado`: requiredFrac ≤ capacityCap but > riskCap — capped at the
+ *   risk-profile rate; the deadline slips, so monthsAtMargin is recomputed.
+ * - `inviable`: requiredFrac > capacityCap — even the user's full sustainable
+ *   capacity can't make the deadline; we propose the best sustainable margin
+ *   (clamped) and the honest timeline it actually buys.
+ *
+ * Degenerate case: a profile with no savings capacity (capacityCap ≤ 0, i.e.
+ * capacity ≤ 0 so even the 1% floor isn't sustainable) has no honest margin to
+ * offer — it returns `{ status: 'inviable', marginFraction: 0, monthly: 0,
+ * monthsAtMargin: null }`. `monthsAtMargin` is `null` precisely when no
+ * positive margin exists (would otherwise be Infinity).
+ *
+ * @throws ValidationError if amount ≤ 0, or months is not an integer ≥ 1
+ *   ("no llegás a una meta en menos de un mes").
+ */
+export function planGoal(
+  profile: UserProfile,
+  risk: RiskProfile,
+  amount: number,
+  months: number,
+): {
+  status: 'comodo' | 'ajustado' | 'inviable'
+  marginFraction: number
+  monthly: number
+  monthsAtMargin: number | null
+} {
+  if (!Number.isFinite(amount) || amount <= 0)
+    throw new ValidationError(`amount must be positive: ${amount}`)
+  if (!Number.isInteger(months) || months < 1)
+    throw new ValidationError(
+      `months must be an integer ≥ 1 (no llegás a una meta en menos de un mes): ${months}`,
+    )
+  if (profile.gastoMensual <= 0)
+    throw new ValidationError(`gastoMensual must be positive: ${profile.gastoMensual}`)
+
+  const required = amount / months
+  const requiredFrac = required / profile.gastoMensual
+  const capacityCap = savingsCapacity(profile) / profile.gastoMensual
+  const riskCap = RISK_TO_MARGIN[risk] ?? RISK_TO_MARGIN.moderado
+
+  const planAt = (
+    status: 'comodo' | 'ajustado' | 'inviable',
+    marginFraction: number,
+  ) => {
+    const monthly = monthlyContribution(profile, marginFraction)
+    return { status, marginFraction, monthly, monthsAtMargin: monthsAtRate(amount, monthly).months }
+  }
+
+  if (requiredFrac <= Math.min(capacityCap, riskCap)) {
+    // comodo: the deadline is met exactly at the floored required margin.
+    return planAt('comodo', clampMargin(Math.max(requiredFrac, 0.01)))
+  }
+  if (requiredFrac <= capacityCap) {
+    // ajustado: capped at the risk-profile rate; timeline recomputed at it.
+    return planAt('ajustado', clampMargin(riskCap))
+  }
+  // inviable: best sustainable margin (clamped); honest timeline at it.
+  if (capacityCap < 0.01) {
+    // No sustainable margin exists (capacity below the 1% floor / ≤ 0).
+    return { status: 'inviable', marginFraction: 0, monthly: 0, monthsAtMargin: null }
+  }
+  return planAt('inviable', clampMargin(Math.max(Math.min(capacityCap, 0.2), 0.01)))
+}
+
+/**
  * Direction + magnitude of a numeric series (spec decision #28): compares the
  * average of the first ≤3 entries (base) against the average of the last ≤3
  * (recent). `pct` is the relative change (recent − base) / base. A ±3% deadband

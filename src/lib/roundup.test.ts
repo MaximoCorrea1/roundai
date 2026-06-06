@@ -11,6 +11,7 @@ import {
   monthlySweepTotal,
   monthsToGoal,
   monthsAtRate,
+  planGoal,
   simulateReturns,
   sweepForPayment,
   trendOf,
@@ -132,6 +133,57 @@ describe('monthsAtRate', () => {
   test('rate ≤ 0 → unreachable, never Infinity/NaN', () => {
     expect(monthsAtRate(1000, 0)).toEqual({ reachable: false, months: null })
     expect(monthsAtRate(1000, -5)).toEqual({ reachable: false, months: null })
+  })
+})
+
+describe('planGoal', () => {
+  // mati: gasto 1.180.000, capacity 108.333,33 → capacityCap 0.091808.
+  // riskCaps: moderado 0.07, agresivo 0.12.
+  test('a) mati moderado $500.000 / 12m → comodo (required ≤ both caps)', () => {
+    const p = planGoal(mati, 'moderado', 500_000, 12)
+    expect(p.status).toBe('comodo')
+    // required 41.666,67 / 1.180.000 = 0.035311
+    expect(p.marginFraction).toBeCloseTo(0.035311, 5)
+    expect(p.monthly).toBeCloseTo(41_666.67, 1)
+    expect(p.monthsAtMargin).toBe(12)
+  })
+  test('b) mati moderado $500.000 / 6m → ajustado (fits capacity, exceeds riskCap)', () => {
+    const p = planGoal(mati, 'moderado', 500_000, 6)
+    expect(p.status).toBe('ajustado')
+    // required 83.333,33 / 1.180.000 = 0.070621 > 0.07 (riskCap) ≤ 0.091808 (capacityCap)
+    expect(p.marginFraction).toBe(0.07)
+    expect(p.monthly).toBeCloseTo(82_600, 6)
+    // 500.000 / 82.600 = 6.053 → ceil 7
+    expect(p.monthsAtMargin).toBe(7)
+  })
+  test('c) mati agresivo $1.000.000 / 3m → inviable (required > capacityCap)', () => {
+    const p = planGoal(mati, 'agresivo', 1_000_000, 3)
+    expect(p.status).toBe('inviable')
+    // required 333.333,33 / 1.180.000 = 0.282486 > capacityCap → clamp(min(0.091808, 0.20))
+    expect(p.marginFraction).toBeCloseTo(0.091808, 5)
+    expect(p.monthly).toBeCloseTo(108_333.33, 1)
+    // ceil(1.000.000 / 108.333,33) = ceil(9.2307) = 10
+    expect(p.monthsAtMargin).toBe(10)
+  })
+  test('months < 1 → ValidationError', () => {
+    expect(() => planGoal(mati, 'moderado', 500_000, 0)).toThrow(ValidationError)
+  })
+  test('non-integer months → ValidationError', () => {
+    expect(() => planGoal(mati, 'moderado', 500_000, 1.5)).toThrow(ValidationError)
+  })
+  test('amount ≤ 0 → ValidationError', () => {
+    expect(() => planGoal(mati, 'moderado', 0, 12)).toThrow(ValidationError)
+    expect(() => planGoal(mati, 'moderado', -100, 12)).toThrow(ValidationError)
+  })
+  test('zero-capacity profile → inviable degenerate (margin/monthly 0, monthsAtMargin null)', () => {
+    const broke = { ...mati, liquidezFinDeMes: [0, 0, 0] }
+    const p = planGoal(broke, 'moderado', 500_000, 12)
+    expect(p).toEqual({
+      status: 'inviable',
+      marginFraction: 0,
+      monthly: 0,
+      monthsAtMargin: null,
+    })
   })
 })
 
