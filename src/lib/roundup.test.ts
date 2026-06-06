@@ -10,6 +10,7 @@ import {
   monthlyContribution,
   monthlySweepTotal,
   monthsToGoal,
+  monthsAtRate,
   simulateReturns,
   sweepForPayment,
   RISK_TO_MARGIN,
@@ -113,6 +114,23 @@ describe('monthsToGoal', () => {
     const r = monthsToGoal(lu, computeOptimalMargin(lu), 2_000_000)
     expect(r.reachable).toBe(true)
     expect(r.months!).toBeGreaterThan(100)
+  })
+})
+
+describe('monthsAtRate', () => {
+  // Generic projection used by the goal screen: remaining amount at a flat
+  // monthly sweep rate. Keeps the goal projection inside the one-calculator rule.
+  test('ceils months for a partial remainder', () => {
+    // 500.000 − 305 = 499.695 remaining at 82.600/mes → 6.049 → 7 meses
+    expect(monthsAtRate(499_695, 82_600)).toEqual({ reachable: true, months: 7 })
+  })
+  test('remaining ≤ 0 → already reached, 0 months', () => {
+    expect(monthsAtRate(0, 82_600)).toEqual({ reachable: true, months: 0 })
+    expect(monthsAtRate(-50, 82_600)).toEqual({ reachable: true, months: 0 })
+  })
+  test('rate ≤ 0 → unreachable, never Infinity/NaN', () => {
+    expect(monthsAtRate(1000, 0)).toEqual({ reachable: false, months: null })
+    expect(monthsAtRate(1000, -5)).toEqual({ reachable: false, months: null })
   })
 })
 

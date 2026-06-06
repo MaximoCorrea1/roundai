@@ -84,6 +84,21 @@ export function monthsToGoal(
   return { reachable: true, months: Math.ceil(goalAmount / contribution) }
 }
 
+/**
+ * Months to cover a remaining amount at a flat monthly sweep rate (Math.ceil).
+ * Generic counterpart to monthsToGoal, used by the goal screen's pace line so the
+ * projection stays inside the one-calculator rule. remaining ≤ 0 → already there
+ * ({ reachable: true, months: 0 }); rate ≤ 0 → { reachable: false, months: null }.
+ */
+export function monthsAtRate(
+  remainingAmount: number,
+  monthlyRate: number,
+): { reachable: boolean; months: number | null } {
+  if (remainingAmount <= 0) return { reachable: true, months: 0 }
+  if (monthlyRate <= 0) return { reachable: false, months: null }
+  return { reachable: true, months: Math.ceil(remainingAmount / monthlyRate) }
+}
+
 /** Format an ARS amount, es-AR, no decimals (emits a NBSP after `$`; spec decision #17). */
 export function formatARS(n: number): string {
   return new Intl.NumberFormat('es-AR', {
