@@ -4,6 +4,7 @@
 // Phase 1: type declarations only. Implementations land in Phase 3 via TDD —
 // do NOT add functions here without a failing test first (see docs/plan.md §Phase 3).
 
+import type { Transaction } from '../data/transactions'
 import { TNA_SIMULADA } from './config'
 
 export type RiskProfile = 'conservador' | 'moderado' | 'agresivo'
@@ -114,4 +115,16 @@ export function simulateReturns(
   const r = TNA_SIMULADA / 12
   const total = months === 0 ? aportado : Math.round(contribution * (((1 + r) ** months - 1) / r))
   return { aportado, rendimiento: total - aportado, total }
+}
+
+/** The per-payment sweep (spec decision #8): round(margin × amount), nearest peso half-up. */
+export function sweepForPayment(amount: number, marginFraction: number): number {
+  if (!Number.isFinite(amount) || amount < 0)
+    throw new ValidationError(`invalid payment amount: ${amount}`)
+  return Math.round(clampMargin(marginFraction) * amount)
+}
+
+/** Total swept across a ledger this month: Σ sweepForPayment over each transaction. */
+export function monthlySweepTotal(ledger: Transaction[], marginFraction: number): number {
+  return ledger.reduce((sum, tx) => sum + sweepForPayment(tx.amount, marginFraction), 0)
 }

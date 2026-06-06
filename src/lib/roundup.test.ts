@@ -8,8 +8,10 @@ import {
   isSustainable,
   liquidityBand,
   monthlyContribution,
+  monthlySweepTotal,
   monthsToGoal,
   simulateReturns,
+  sweepForPayment,
   RISK_TO_MARGIN,
   clampMargin,
   savingsCapacity,
@@ -159,5 +161,28 @@ describe('simulateReturns', () => {
   })
   test('negative months → ValidationError', () => {
     expect(() => simulateReturns(50_000, -1)).toThrow(ValidationError)
+  })
+})
+
+describe('sweepForPayment', () => {
+  test('exact per payment, half-up', () => {
+    expect(sweepForPayment(4_350, 0.07)).toBe(305) // 304,5 → 305
+  })
+  test('zero amount → 0', () => {
+    expect(sweepForPayment(0, 0.07)).toBe(0)
+  })
+  test('negative amount → ValidationError', () => {
+    expect(() => sweepForPayment(-1, 0.07)).toThrow(ValidationError)
+  })
+  test('percent-style margin → ValidationError (via clampMargin)', () => {
+    expect(() => sweepForPayment(4_350, 5)).toThrow(ValidationError)
+  })
+})
+
+describe('monthlySweepTotal', () => {
+  test('reconciles with the margin target to within n/2 pesos', () => {
+    const txns = transactionsFor('mati')
+    const total = monthlySweepTotal(txns, 0.07)
+    expect(Math.abs(total - 0.07 * mati.gastoMensual)).toBeLessThanOrEqual(txns.length / 2)
   })
 })
