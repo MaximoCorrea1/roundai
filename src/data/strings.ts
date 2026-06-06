@@ -40,14 +40,60 @@ export const strings = {
       ahorrar: 'Quiero ahorrar',
       nose: 'No sé',
     },
+    // Label of the SavedGoal created on accept — by goal type, never invented.
+    goalLabels: {
+      rendir: 'Mi plata rindiendo',
+      meta: 'Mi meta',
+      ahorrar: 'Mi ahorro',
+      nose: 'Mi meta',
+    },
     amountPrompt: '¿De cuánto hablamos?',
     accept: 'Dale, activalo',
-    // Staggered greeting bubbles on first open. {nombre} + ONE real data point
-    // ({capacidad} = formatARS(savingsCapacity(profile))) — no invented numbers.
+    // Greeting — 2 bubbles max (copy diet, decision #33). {nombre} + the quiz
+    // intro that frames the regulatory profiling (decision #26).
     greeting: {
       hola: 'Hola {nombre} 👋 soy tu coach de roundai.',
-      dato: 'Ya le eché un ojo a tus movimientos: te quedaron ~{capacidad} a fin de mes, en promedio.',
-      pregunta: '¿Con qué te puedo dar una mano?',
+      pregunta:
+        'Antes de arrancar: 3 preguntas. Por regulación, tu perfil inversor lo definís vos — no lo infiero yo.',
+    },
+    // Investor-profile quiz (decision #26): 3 chip questions, majority → riskProfile.
+    quiz: {
+      q1: {
+        prompt: 'Si tu inversión baja 10% en un mes…',
+        c: 'La saco ya',
+        m: 'Espero que se recupere',
+        a: 'Aprovecho y sumo',
+      },
+      q2: {
+        prompt: '¿Tu experiencia invirtiendo?',
+        c: 'Nunca invertí',
+        m: 'Algo probé',
+        a: 'Hace años',
+      },
+      q3: {
+        prompt: '¿Qué buscás?',
+        c: 'Cuidar mi plata',
+        m: 'Equilibrio',
+        a: 'Crecimiento máximo',
+      },
+      // Result bubble: "Tu perfil: {perfil} ✦" + one-line meaning, by risk level.
+      result: 'Tu perfil: {perfil} ✦',
+      labels: { conservador: 'Conservador', moderado: 'Moderado', agresivo: 'Agresivo' },
+      meaning: {
+        conservador: 'priorizás cuidar tu plata antes que arriesgar.',
+        moderado: 'buscás equilibrio entre crecer y dormir tranquilo.',
+        agresivo: 'vas por el máximo crecimiento, bancando los saltos.',
+      },
+    },
+    // Timeline step (decision #25): plazo chips + custom-months input.
+    timeline: {
+      prompt: '¿Para cuándo?',
+      chips: { m6: '6 meses', m12: '12 meses', m24: '24 meses', otro: 'otro' },
+      values: { m6: 6, m12: 12, m24: 24 },
+      customLabel: '¿En cuántos meses?',
+      customPlaceholder: 'meses',
+      customConfirm: 'Listo',
+      customUnit: 'meses',
     },
     // ARS amount entry (for 'meta' / 'ahorrar')
     amount: {
@@ -57,8 +103,8 @@ export const strings = {
       quick: { lo: '$ 500.000', mid: '$ 1.000.000', hi: '$ 2.000.000' },
       quickValues: { lo: 500_000, mid: 1_000_000, hi: 2_000_000 },
     },
-    // Inline confirmation bubble after the proposal is accepted.
-    activated: 'Listo, lo activé ✦ Desde ahora cada pago suma a tu meta. Preguntame lo que quieras.',
+    // Inline confirmation bubble after the proposal is accepted (≤2 lines).
+    activated: 'Listo, lo activé ✦ Cada pago suma a tu meta. Preguntame lo que quieras.',
   },
   payment: {
     payTitle: 'Pagar',
@@ -109,30 +155,58 @@ export const strings = {
       },
     },
   },
-  // Proposal bubbles — interpolated in src/lib/proposal.ts from roundup.ts
-  // outputs ONLY. Components never see these directly; they receive ready
-  // ChatMessages. One idea per bubble, voseo, warm and concrete.
+  // Proposal v2 (decisions #25, #28, #33) — interpolated in src/lib/proposal.ts
+  // from roundup.ts outputs ONLY (planGoal + trendOf). Tri-state, ≤2 lines per
+  // bubble. Components never see these directly; they receive ready ChatMessages.
   proposal: {
-    // (1) liquidity read — picked by liquidityBand(profile)
-    liquidity: {
-      baja: 'Tu liquidez a fin de mes es baja: te queda poco margen, así que voy a ir con cuidado para no apretarte.',
-      media: 'Tu liquidez a fin de mes es intermedia: hay lugar para guardar algo sin que se te note en el día a día.',
-      alta: 'Tenés buena liquidez a fin de mes: hay margen de sobra para hacer crecer tu plata.',
-    },
-    // (2) round-up explainer + concrete café example ({margen}, {cafe}, {sweepCafe})
-    roundup:
-      'El redondeo clásico junta monedas — roundai lo calibra a tu meta: cada pago suma su {margen}. Un café de {cafe} suma {sweepCafe} sin que lo sientas.',
-    // (3) the proposal — margin + monthly contribution + sustainability framing
-    //     ({margen}, {aporte}, {capacidad})
-    proposalLine:
-      'Mi propuesta: un margen del {margen}. Son ~{aporte} por mes, y entra cómodo dentro de los ~{capacidad} que te suelen sobrar.',
-    // (4) months-to-goal projection ({meses}) — appended only when goal has amount
-    projection: 'Con eso llegás a tu meta en ~{meses} meses, sin contar rendimientos.',
-    // honest branch: reachable but slow (> 24 meses) — offer alternatives
-    slow:
-      'Siendo honesto: a este ritmo sostenible te tomaría ~{meses} meses, que es bastante. Podemos ajustar el plazo, recortar algún gasto, o arrancar más chico y subir después. ¿Cómo lo ves?',
-    // honest branch: unreachable (contribution 0) — no CTA
+    // (0) tendencies line — REAL data via trendOf(gastoHist) + trendOf(liquidez).
+    //     {gastoDir}/{gastoPct}/{liqDir}/{liqPct} pre-rendered in proposal.ts.
+    tendencies:
+      'Tus gastos {gastoDir} ({gastoPct}) y tu liquidez {liqDir} ({liqPct}) — esto se recalcula solo cada mes.',
+    // direction verbs (criollo, ≤2 words) keyed by trendOf direction.
+    trendVerb: { sube: 'suben suave', estable: 'están estables', baja: 'bajan' },
+    trendVerbLiq: { sube: 'también sube', estable: 'está estable', baja: 'baja' },
+    // (A) comodo — deadline met at the floored required margin.
+    //     {amount}/{months}/{monthly}/{margen}/{capacity}
+    comodo:
+      'Para {amount} en {months} meses: {monthly}/mes → margen {margen}. Entra cómodo: te sobran ~{capacity}.',
+    // (A') comodo, no deadline ('rendir'/'nose'): sustainable open-ended plan.
+    //     {margen}/{monthly}/{capacity}
+    comodoOpen:
+      'Margen {margen}: ~{monthly}/mes hacia tu plata. Entra cómodo dentro de los ~{capacity} que te sobran.',
+    // (B) ajustado — capped at the risk-profile rate; deadline slips.
+    //     {months}/{required}/{risk}/{margen}/{monthsAtMargin}
+    ajustado:
+      'En {months} meses harían falta {required}/mes — más que el tope de tu perfil {risk}. A {margen} llegás en {monthsAtMargin} meses.',
+    // (C) inviable — even full capacity misses the deadline; honest best timeline.
+    //     {capacity}/{months}/{margen}/{monthsAtMargin}
+    inviable:
+      'Ni usando todo tu sobrante ({capacity}/mes) llegás en {months}. A tu máximo ({margen}) son {monthsAtMargin} meses.',
+    // degenerate inviable: no sustainable margin exists at all — no CTA.
     unreachable:
-      'Te soy sincero: con tu liquidez de hoy no me da para proponerte un aporte que sea sostenible. Mejor arrancamos cuando tengas un poco más de aire a fin de mes — no quiero venderte humo.',
+      'Con tu liquidez de hoy no me da para un aporte sostenible. Arrancamos cuando tengas más aire a fin de mes — no te vendo humo.',
+    // tri-state CTA chip labels (rendered as buttons next to/after the proposal)
+    ctas: {
+      acceptDefault: 'Dale, activalo',
+      acceptMonths: 'Dale, {meses} meses',
+      changeTimeline: 'Cambiar plazo',
+      changeGoal: 'Cambiar meta',
+    },
+  },
+  // Interactive margin tweaker (decision #27) — the margin chip taps open this.
+  tweaker: {
+    chipHint: 'tocá para ajustar',
+    title: 'Ajustá tu margen',
+    rowAporte: 'aporte/mes',
+    rowMonths: 'llegás en',
+    rowCafe: 'un café de {cafe} suma',
+    monthsValue: '{meses} meses',
+    monthsUnreachable: 'no llega',
+    // sustainability bar caption when contribution exceeds the session-risk cap.
+    overCap: 'por encima de tu perfil {risk}',
+    withinCap: 'sostenible para tu perfil {risk}',
+    confirm: 'Confirmar margen',
+    stepDown: 'Bajar margen',
+    stepUp: 'Subir margen',
   },
 } as const
