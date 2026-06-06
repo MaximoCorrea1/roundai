@@ -65,4 +65,30 @@ export const strings = {
     sandbox: 'fondos simulados — sandbox',
     recalc: 'tu margen se reajusta solo: liquidez prevista {prevista} vs real {real}',
   },
+  // Proposal bubbles — interpolated in src/lib/proposal.ts from roundup.ts
+  // outputs ONLY. Components never see these directly; they receive ready
+  // ChatMessages. One idea per bubble, voseo, warm and concrete.
+  proposal: {
+    // (1) liquidity read — picked by liquidityBand(profile)
+    liquidity: {
+      baja: 'Tu liquidez a fin de mes es baja: te queda poco margen, así que voy a ir con cuidado para no apretarte.',
+      media: 'Tu liquidez a fin de mes es intermedia: hay lugar para guardar algo sin que se te note en el día a día.',
+      alta: 'Tenés buena liquidez a fin de mes: hay margen de sobra para hacer crecer tu plata.',
+    },
+    // (2) round-up explainer + concrete café example ({margen}, {cafe}, {sweepCafe})
+    roundup:
+      'El redondeo clásico junta monedas — roundai lo calibra a tu meta: cada pago suma su {margen}. Un café de {cafe} suma {sweepCafe} sin que lo sientas.',
+    // (3) the proposal — margin + monthly contribution + sustainability framing
+    //     ({margen}, {aporte}, {capacidad})
+    proposalLine:
+      'Mi propuesta: un margen del {margen}. Son ~{aporte} por mes, y entra cómodo dentro de los ~{capacidad} que te suelen sobrar.',
+    // (4) months-to-goal projection ({meses}) — appended only when goal has amount
+    projection: 'Con eso llegás a tu meta en ~{meses} meses, sin contar rendimientos.',
+    // honest branch: reachable but slow (> 24 meses) — offer alternatives
+    slow:
+      'Siendo honesto: a este ritmo sostenible te tomaría ~{meses} meses, que es bastante. Podemos ajustar el plazo, recortar algún gasto, o arrancar más chico y subir después. ¿Cómo lo ves?',
+    // honest branch: unreachable (contribution 0) — no CTA
+    unreachable:
+      'Te soy sincero: con tu liquidez de hoy no me da para proponerte un aporte que sea sostenible. Mejor arrancamos cuando tengas un poco más de aire a fin de mes — no quiero venderte humo.',
+  },
 } as const

@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useRef, type Dispatch } from 'react'
+import { useEffect, useRef, useState, type Dispatch } from 'react'
 import type { AppState, Action } from '@/components/AppShell'
 import type { GoalType } from '@/lib/chat-types'
 import { activeProfile } from '@/data/profiles'
-import { savingsCapacity, formatARS } from '@/lib/roundup'
+import { savingsCapacity, computeOptimalMargin, formatARS } from '@/lib/roundup'
+import { buildProposalMessages, hasSustainableProposal } from '@/lib/proposal'
 import { strings } from '@/data/strings'
 import { MiniappHeader } from './MiniappHeader'
 import { MessageList } from './MessageList'
@@ -18,11 +19,12 @@ import { AmountInput } from './AmountInput'
 // composer.
 //
 // SEQUENCING lives here (in effects), never in the reducer: the staggered
-// greeting (typing indicator → bubble, ~500ms apart) and, later, the proposal
-// pacing. Timers are tracked and cleared on unmount so a fast back-out never
-// leaks a dispatch into a stale tree.
+// greeting and the proposal pacing (each bubble preceded by a typing pause).
+// Timers are tracked and cleared on unmount so a fast back-out never leaks a
+// dispatch into a stale tree.
 
 const STEP = 500 // ms between staggered greeting beats
+const PROPOSAL_STEP = 700 // ms between proposal bubbles (a touch slower — it's the pitch)
 
 export function ChatScreen({
   state,
@@ -35,7 +37,11 @@ export function ChatScreen({
 }) {
   const isLive = state.chatPhase === 'live'
   const greetingStarted = useRef(false)
+  const proposalStarted = useRef(false)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  // Local UI flag (not reducer state): the proposal sequence has fully landed,
+  // so it's time to reveal the consent CTA. Avoids flashing it between bubbles.
+  const [proposalReady, setProposalReady] = useState(false)
 
   // Clear any pending timers on unmount.
   useEffect(() => {
@@ -44,6 +50,10 @@ export function ChatScreen({
       for (const t of list) clearTimeout(t)
     }
   }, [])
+
+  const schedule = (fn: () => void, at: number) => {
+    timers.current.push(setTimeout(fn, at))
+  }
 
   // Staggered greeting: fires once, the first time the miniapp is opened.
   useEffect(() => {
@@ -60,19 +70,13 @@ export function ChatScreen({
       g.pregunta,
     ]
 
-    const schedule = (fn: () => void, at: number) => {
-      timers.current.push(setTimeout(fn, at))
-    }
-
     let t = 0
     bubbles.forEach((text, i) => {
-      // typing indicator on, then the bubble lands STEP later
       schedule(() => dispatch({ type: 'SET_STATUS', status: 'typing' }), t)
       t += STEP
       schedule(() => {
         dispatch({ type: 'PUSH_MESSAGE', message: { role: 'assistant', content: text } })
         dispatch({ type: 'SET_STATUS', status: 'idle' })
-        // after the last bubble, open the goal picker
         if (i === bubbles.length - 1) dispatch({ type: 'SET_PHASE', phase: 'goalSelect' })
       }, t)
       t += STEP
@@ -80,11 +84,33 @@ export function ChatScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active])
 
+  // Proposal pacing: once a goal is set and we enter 'proposal', push the
+  // templated bubbles one at a time with typing pauses. Fires once.
+  useEffect(() => {
+    if (state.chatPhase !== 'proposal' || proposalStarted.current || !state.goal) return
+    proposalStarted.current = true
+
+    const profile = activeProfile()
+    const bubbles = buildProposalMessages(profile, state.goal)
+
+    let t = PROPOSAL_STEP // a small beat before the first line
+    bubbles.forEach((msg, i) => {
+      schedule(() => dispatch({ type: 'SET_STATUS', status: 'typing' }), t)
+      t += PROPOSAL_STEP
+      schedule(() => {
+        dispatch({ type: 'PUSH_MESSAGE', message: msg })
+        dispatch({ type: 'SET_STATUS', status: 'idle' })
+        // reveal the CTA only after the FINAL bubble has landed
+        if (i === bubbles.length - 1) setProposalReady(true)
+      }, t)
+      t += PROPOSAL_STEP
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.chatPhase])
+
   function handleSelectGoal(type: GoalType) {
     const label = strings.onboarding.goalOptions[type]
-    // echo the choice as a user turn so the transcript reads naturally
     dispatch({ type: 'PUSH_MESSAGE', message: { role: 'user', content: label } })
-    // 'meta'/'ahorrar' need an amount; the rest skip straight to the proposal
     const needsAmount = type === 'meta' || type === 'ahorrar'
     dispatch({
       type: 'SELECT_GOAL',
@@ -100,6 +126,22 @@ export function ChatScreen({
     })
     dispatch({ type: 'SET_AMOUNT', amount }) // → chatPhase 'proposal'
   }
+
+  function handleAccept() {
+    const margin = computeOptimalMargin(activeProfile())
+    dispatch({ type: 'ACCEPT_PROPOSAL', marginFraction: margin })
+    dispatch({
+      type: 'PUSH_MESSAGE',
+      message: { role: 'assistant', content: strings.onboarding.activated },
+    })
+  }
+
+  // The consent CTA shows only once the proposal bubbles have all landed AND a
+  // sustainable margin actually exists (the unreachable branch shows no CTA).
+  const proposalDone =
+    state.chatPhase === 'proposal' &&
+    proposalReady &&
+    hasSustainableProposal(activeProfile())
 
   return (
     <div className="flex h-full w-full flex-col bg-cream">
@@ -117,18 +159,33 @@ export function ChatScreen({
             {state.chatPhase === 'goalInput' && (
               <AmountInput onConfirm={handleConfirmAmount} />
             )}
+            {proposalDone && <ConsentCTA onAccept={handleAccept} />}
           </MessageList>
           <ChatInput enabled={isLive} />
         </>
       ) : (
-        // "Mi meta" goal screen lands in Phase 6. Placeholder keeps the tab inert
-        // but coherent for anyone who toggles to it post-activation.
         <div className="flex flex-1 items-center justify-center px-8 text-center">
           <p className="font-display text-[15px] font-medium text-roundai-green/45">
             Tu meta, en breve.
           </p>
         </div>
       )}
+    </div>
+  )
+}
+
+// The single consent moment — a lime call-to-action in the roundai voice.
+function ConsentCTA({ onAccept }: { onAccept: () => void }) {
+  return (
+    <div className="flex w-full justify-center pt-1">
+      <button
+        type="button"
+        onClick={onAccept}
+        className="flex items-center gap-2 rounded-full bg-roundai-green px-5 py-3 text-[14px] font-semibold text-lime shadow-[0_8px_22px_-10px_rgba(7,42,32,0.6)] transition-transform active:scale-[0.98]"
+      >
+        <span aria-hidden="true">✦</span>
+        {strings.onboarding.accept}
+      </button>
     </div>
   )
 }
