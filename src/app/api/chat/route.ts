@@ -59,7 +59,9 @@ export async function POST(req: Request) {
   }
   if (!isSustainable(profile, margin)) margin = computeOptimalMargin(profile)
 
-  if (process.env.DEMO_MODE === '1') return streamPlain(demoReplyFor(profile, messages))
+  // Pass the validated, committed margin (decision #34) so canned answers cite
+  // exactly what the user consented to.
+  if (process.env.DEMO_MODE === '1') return streamPlain(demoReplyFor(profile, margin, messages))
 
   const goal = (b.goal ?? null) as Goal | null
   const system = buildSystemPrompt(profile, goal, margin)

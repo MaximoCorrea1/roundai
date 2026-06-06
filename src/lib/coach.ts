@@ -10,7 +10,7 @@
 // humano — si cambia uno, cambian los dos (Task 5.1).
 
 import { DEMO_PAYMENT } from '@/data/transactions'
-import type { UserProfile } from '@/lib/roundup'
+import type { UserProfile, RiskProfile } from '@/lib/roundup'
 import {
   savingsCapacity,
   monthlyContribution,
@@ -110,24 +110,37 @@ function renderGoal(profile: UserProfile, goal: Goal | null, marginFraction: num
  * Assemble the coach system prompt: frozen persona/límites prefix + a dynamic
  * DATOS AUTORITATIVOS block whose every figure is pre-formatted by roundup.ts.
  * Pure: same inputs → byte-identical output.
+ *
+ * `risk` is the SESSION investor profile declared via the quiz (decision #26) —
+ * it overrides profile.riskProfile downstream and is injected as DECLARED (not
+ * inferred). `goal.months` (the chosen plazo, decision #25) is surfaced too.
  */
 export function buildSystemPrompt(
   profile: UserProfile,
   goal: Goal | null,
   marginFraction: number,
+  // Session risk (quiz result). Defaults to the profile's own risk when the
+  // caller can't supply the declared one (e.g. the live route, which only
+  // forwards the validated margin) — the line still reads "declarado por el
+  // usuario" because the quiz is the only place a profile is ever set.
+  risk: RiskProfile = profile.riskProfile,
 ): string {
   const capacity = savingsCapacity(profile)
   const band = liquidityBand(profile)
   const contribution = monthlyContribution(profile, marginFraction)
   const ejemploPago = DEMO_PAYMENT.amount
   const ejemploSweep = sweepForPayment(ejemploPago, marginFraction)
+  const plazo =
+    goal && goal.months && goal.months > 0 ? `${goal.months} meses` : 'sin plazo fijo'
 
   const datos = `DATOS AUTORITATIVOS (pre-calculados por el sistema — citalos EXACTAMENTE,
 nunca recalcules ni redondees; si un número no está acá, decí que no lo tenés):
-- Usuario: ${profile.nombre} · Perfil: ${profile.riskProfile}
+- Usuario: ${profile.nombre}
+- Perfil inversor (declarado por el usuario, no inferido): ${risk}
 - Liquidez fin de mes (prom. 6m): ${formatARS(capacity)} → banda ${band}
 - Gasto mensual: ${formatARS(profile.gastoMensual)} · Margen acordado: ${formatPct(marginFraction)}
 - Aporte mensual estimado: ${formatARS(contribution)}
+- Plazo elegido: ${plazo}
 - Mecánica por pago: cada pago barre ${formatPct(marginFraction)} a tu meta
   (ej.: un pago de ${formatARS(ejemploPago)} suma ${formatARS(ejemploSweep)})
 - Meta: ${renderGoal(profile, goal, marginFraction)}`

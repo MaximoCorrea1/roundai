@@ -51,6 +51,8 @@ export function useChat(state: AppState, dispatch: Dispatch<Action>) {
       const profile = profiles.find((p) => p.id === ACTIVE_PROFILE_ID)!
       const goal = state.goal
       const margin = state.marginFraction
+      // Session risk declared via the quiz (decision #26); moderado fallback.
+      const risk = state.sessionRisk ?? 'moderado'
 
       // Live turns = everything after the proposal-acceptance boundary, plus the
       // turn the user is sending now. liveStartIndex is captured at ACCEPT_PROPOSAL.
@@ -59,15 +61,16 @@ export function useChat(state: AppState, dispatch: Dispatch<Action>) {
       const userTurn: ChatMessage = { role: 'user', content: trimmed }
       const liveTurns = [...priorLive, userTurn]
 
-      const seed = seedHistory(profile, goal, margin)
+      const seed = seedHistory(profile, goal, margin, risk)
       const wireMessages = capHistory(seed, liveTurns)
 
       // Optimistic UI: show the user turn + the typing indicator immediately.
       dispatch({ type: 'PUSH_MESSAGE', message: userTurn })
       dispatch({ type: 'SET_STATUS', status: 'typing' })
 
-      // The canned reply used by EVERY fallback branch — derived for THIS profile.
-      const fallbackReply = () => demoReplyFor(profile, wireMessages)
+      // The canned reply used by EVERY fallback branch — derived for THIS profile
+      // at the COMMITTED margin (decision #34).
+      const fallbackReply = () => demoReplyFor(profile, margin, wireMessages)
 
       const controller = new AbortController()
       abortRef.current?.abort()
@@ -170,7 +173,7 @@ export function useChat(state: AppState, dispatch: Dispatch<Action>) {
         await runFallback()
       }
     },
-    [state.goal, state.marginFraction, state.messages, state.liveStartIndex, dispatch],
+    [state.goal, state.marginFraction, state.sessionRisk, state.messages, state.liveStartIndex, dispatch],
   )
 
   return { sendMessage }

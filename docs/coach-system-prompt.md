@@ -1,6 +1,6 @@
 # Coach system prompt
 
-> **Fuente de verdad: `src/lib/coach.ts` la implementa — mantener en sync (Task 5.1).** This doc is the human-readable mirror; `buildSystemPrompt(profile, goal, marginFraction)` assembles the live version. It returns a **frozen persona/límites prefix** + a **dynamic `DATOS AUTORITATIVOS` block** (every figure pre-formatted by `src/lib/roundup.ts` — `coach.ts` never formats or computes numbers itself, spec decision #10). If one changes, change both.
+> **Fuente de verdad: `src/lib/coach.ts` la implementa — mantener en sync (Task 5.1, 8.B).** This doc is the human-readable mirror; `buildSystemPrompt(profile, goal, marginFraction, risk?)` assembles the live version. It returns a **frozen persona/límites prefix** + a **dynamic `DATOS AUTORITATIVOS` block** (every figure pre-formatted by `src/lib/roundup.ts` — `coach.ts` never formats or computes numbers itself, spec decision #10). `risk` is the SESSION investor profile declared via the quiz (decision #26), defaulting to `profile.riskProfile`; `goal.months` carries the chosen plazo (decision #25). If one changes, change both.
 
 The prompt has two parts: the **PERSONA + LÍMITES** prefix (frozen, byte-for-byte the constant below) and the **`DATOS AUTORITATIVOS`** block (the authoritative-figures injection, rendered from `roundup.ts` outputs).
 
@@ -78,10 +78,12 @@ LÍMITES (no negociables):
 ```
 DATOS AUTORITATIVOS (pre-calculados por el sistema — citalos EXACTAMENTE,
 nunca recalcules ni redondees; si un número no está acá, decí que no lo tenés):
-- Usuario: {nombre} · Perfil: {riskProfile}
+- Usuario: {nombre}
+- Perfil inversor (declarado por el usuario, no inferido): {risk}
 - Liquidez fin de mes (prom. 6m): {formatARS(savingsCapacity)} → banda {liquidityBand}
 - Gasto mensual: {formatARS(gastoMensual)} · Margen acordado: {formatPct(marginFraction)}
 - Aporte mensual estimado: {formatARS(monthlyContribution)}
+- Plazo elegido: {goal.months ? `${goal.months} meses` : 'sin plazo fijo'}
 - Mecánica por pago: cada pago barre {formatPct(marginFraction)} a tu meta
   (ej.: un pago de {formatARS(4350)} suma {formatARS(sweepForPayment(4350, marginFraction))})
 - Meta: {goal line}
@@ -103,21 +105,24 @@ nunca recalcules ni redondees; si un número no está acá, decí que no lo ten�
 
 ---
 
-## EXAMPLE — rendered block for `mati` (perfil moderado, margen 7%, goal `{type:'meta', amount:500.000}`)
+## EXAMPLE — rendered block for `mati` (perfil declarado moderado, margen 3,5%, goal `{type:'meta', amount:500.000, months:12}`)
 
-Produced by `buildSystemPrompt(profiles[0], {type:'meta', amount:500000}, 0.07)` — numbers
-come from `roundup.ts`, not typed by hand; change the profile and they move together.
+Produced by `buildSystemPrompt(profiles[0], {type:'meta', amount:500000, months:12}, 0.035311, 'moderado')`
+— the canonical comodo case (decision #25: $500.000 en 12 meses sale a 3,5%). Numbers come from
+`roundup.ts`, not typed by hand; change the profile/plazo/margin and they move together.
 
 ```
 DATOS AUTORITATIVOS (pre-calculados por el sistema — citalos EXACTAMENTE,
 nunca recalcules ni redondees; si un número no está acá, decí que no lo tenés):
-- Usuario: Mati · Perfil: moderado
+- Usuario: Mati
+- Perfil inversor (declarado por el usuario, no inferido): moderado
 - Liquidez fin de mes (prom. 6m): $ 108.333 → banda media
-- Gasto mensual: $ 1.180.000 · Margen acordado: 7%
-- Aporte mensual estimado: $ 82.600
-- Mecánica por pago: cada pago barre 7% a tu meta
-  (ej.: un pago de $ 4.350 suma $ 305)
-- Meta: $ 500.000 → 7 meses (sin contar rendimientos)
+- Gasto mensual: $ 1.180.000 · Margen acordado: 3,5%
+- Aporte mensual estimado: $ 41.667
+- Plazo elegido: 12 meses
+- Mecánica por pago: cada pago barre 3,5% a tu meta
+  (ej.: un pago de $ 4.350 suma $ 154)
+- Meta: $ 500.000 → 12 meses (sin contar rendimientos)
 ```
 
 > El `$` va seguido de un espacio **no separable** (NBSP) por el formato es-AR de `formatARS` (spec decision #17): se ve `$ 108.333`.

@@ -13,25 +13,37 @@ import {
   computeOptimalMargin,
   monthlyContribution,
   savingsCapacity,
+  clampMargin,
   formatARS,
   formatPct,
 } from './roundup'
 
 // The 4 canonical phrasings, exported for the Phase-7 demo script (copy-paste).
 export const DEMO_PROMPTS: string[] = [
-  '¿Por qué un 7% y no más?',
+  '¿Por qué este margen y no más?',
   '¿Qué es un FCI?',
   'Este mes no me alcanza, ¿puedo bajarlo?',
   '¿Me conviene comprar dólares?',
 ]
 
 /**
- * Pick the rehearsed reply for the last user message, all numbers derived from
- * roundup.ts for `profile`. Falls back to a warm generic line that returns to
- * the goal. `messages` is the full history; only the last user turn is matched.
+ * Pick the rehearsed reply for the last user message. Numbers derive from the
+ * COMMITTED session margin (decision #34) — whatever the user consented to,
+ * post-tweak — not a recomputed default. Falls back to the sustainable optimum
+ * if the passed margin is invalid. `messages` is the full history; only the last
+ * user turn is matched.
  */
-export function demoReplyFor(profile: UserProfile, messages: ChatMessage[]): string {
-  const margin = computeOptimalMargin(profile)
+export function demoReplyFor(
+  profile: UserProfile,
+  marginFraction: number,
+  messages: ChatMessage[],
+): string {
+  let margin: number
+  try {
+    margin = clampMargin(marginFraction)
+  } catch {
+    margin = computeOptimalMargin(profile)
+  }
   const capacity = savingsCapacity(profile)
   const contribution = monthlyContribution(profile, margin)
   const pct = formatPct(margin)
@@ -41,8 +53,8 @@ export function demoReplyFor(profile: UserProfile, messages: ChatMessage[]): str
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')
   const text = (lastUser?.content ?? '').toLowerCase()
 
-  // 1. margin-why — sustainability vs capacity, cite capacity + contribution.
-  if (/por\s*qué|porque|7\s*%|margen/.test(text)) {
+  // 1. margin-why — sustainability vs capacity, cite the committed margin.
+  if (/por\s*qué|porque|\d\s*%|margen/.test(text)) {
     return `Elegí ${pct} porque entra cómodo en los ~${cap} que te suelen sobrar a fin de mes: son ~${aporte} por mes y no te aprietan. Si subiéramos más, dejaría de ser sostenible y lo terminarías pausando.`
   }
 
