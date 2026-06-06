@@ -38,6 +38,7 @@ export async function POST(req: Request) {
   const body: unknown = await req.json().catch(() => null)
   const b = (body ?? {}) as {
     profileId?: unknown
+    risk?: unknown
     messages?: unknown
     marginFraction?: unknown
     goal?: unknown
@@ -64,7 +65,13 @@ export async function POST(req: Request) {
   if (process.env.DEMO_MODE === '1') return streamPlain(demoReplyFor(profile, margin, messages))
 
   const goal = (b.goal ?? null) as Goal | null
-  const system = buildSystemPrompt(profile, goal, margin)
+  // Quiz-declared session risk (decision #26): whitelist against the closed
+  // enum — anything else falls back to the profile's own risk.
+  const risk =
+    b.risk === 'conservador' || b.risk === 'moderado' || b.risk === 'agresivo'
+      ? b.risk
+      : profile.riskProfile
+  const system = buildSystemPrompt(profile, goal, margin, risk)
   const encoder = new TextEncoder()
   return new Response(
     new ReadableStream({

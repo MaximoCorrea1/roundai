@@ -119,6 +119,7 @@ export function useChat(state: AppState, dispatch: Dispatch<Action>) {
             profileId: ACTIVE_PROFILE_ID,
             goal,
             marginFraction: margin,
+            risk, // quiz-declared session risk (decision #26) — server whitelists it
             messages: wireMessages,
           }),
         })
