@@ -2,10 +2,15 @@
 
 import type { Dispatch } from 'react'
 import type { AppState, Action } from '@/components/AppShell'
+import { MiniappHeader } from './MiniappHeader'
+import { MessageList } from './MessageList'
+import { ChatInput } from './ChatInput'
 
 // The roundai miniapp surface — a visibly different world from Nimbo: warm cream
-// background, deep-green chrome, one lime accent. Full chat UI lands in Task 2.2;
-// this shell wires the slide-in and the back affordance for Task 2.1.
+// background, deep-green chrome, one lime accent, same phone. Composes the
+// header, the scrolling conversation, and the (onboarding-gated) composer.
+// Onboarding sequencing + the "Mi meta" goal screen arrive in later phases;
+// this is the chat shell (Task 2.2).
 
 export function ChatScreen({
   state,
@@ -15,34 +20,29 @@ export function ChatScreen({
   dispatch: Dispatch<Action>
   active: boolean
 }) {
-  void state
+  const isLive = state.chatPhase === 'live'
+
   return (
     <div className="flex h-full w-full flex-col bg-cream">
-      <div className="flex shrink-0 items-center gap-2 px-4 pt-[58px] pb-3">
-        <button
-          type="button"
-          onClick={() => dispatch({ type: 'BACK_TO_WALLET' })}
-          aria-label="Volver a la billetera"
-          className="grid h-9 w-9 place-items-center rounded-full bg-roundai-green/5 text-roundai-green"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path
-              d="M10 3 5 8l5 5"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-        <span className="font-display text-[18px] font-semibold lowercase tracking-tight text-roundai-green">
-          roundai
-        </span>
-        <span aria-hidden="true" className="text-lime-deep">
-          ✦
-        </span>
-      </div>
-      <div className="flex-1" />
+      <MiniappHeader state={state} dispatch={dispatch} />
+
+      {state.view === 'chat' ? (
+        <>
+          <MessageList
+            messages={state.messages}
+            showTyping={state.coachStatus === 'typing'}
+          />
+          <ChatInput enabled={isLive} />
+        </>
+      ) : (
+        // "Mi meta" goal screen lands in Phase 6. Placeholder keeps the tab inert
+        // but coherent for anyone who toggles to it post-activation.
+        <div className="flex flex-1 items-center justify-center px-8 text-center">
+          <p className="font-display text-[15px] font-medium text-roundai-green/45">
+            Tu meta, en breve.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
