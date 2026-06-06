@@ -312,6 +312,41 @@ describe('ledger discipline (spec decision #24)', () => {
   })
 })
 
+describe('profile histories (spec decision #28)', () => {
+  // gastoMensualHist must end exactly on gastoMensual so ledger discipline
+  // (spec #24) keeps holding — the visible "last month" gasto is the same
+  // number every other stat is derived from.
+  test.each(profiles)('$id gastoMensualHist.at(-1) === gastoMensual', (profile) => {
+    expect(profile.gastoMensualHist.at(-1)).toBe(profile.gastoMensual)
+  })
+  test.each(profiles)('$id gastoMensualHist has 6 entries', (profile) => {
+    expect(profile.gastoMensualHist).toHaveLength(6)
+  })
+
+  // ⚠ Trends asserted as COMPUTED, not as wished-for. Downstream copy must use
+  // these real directions (the spec note flagged mati's liquidez is actually
+  // 'sube' (+20.3%), not 'estable' — confirmed here).
+  test('mati gasto trends sube (gentle rise)', () => {
+    const t = trendOf(mati.gastoMensualHist)
+    expect(t.direction).toBe('sube')
+    expect(t.pct).toBeCloseTo(0.059361, 5)
+  })
+  test('mati liquidez trends sube (NOT estable — real data wins)', () => {
+    const t = trendOf(mati.liquidezFinDeMes)
+    expect(t.direction).toBe('sube')
+    expect(t.pct).toBeCloseTo(0.20339, 4)
+  })
+  test('lu gasto trends estable (flat-ish)', () => {
+    expect(trendOf(lu.gastoMensualHist).direction).toBe('estable')
+  })
+  test('lu liquidez trends estable', () => {
+    expect(trendOf(lu.liquidezFinDeMes).direction).toBe('estable')
+  })
+  test('fede gasto trends sube (mild rise)', () => {
+    expect(trendOf(fede.gastoMensualHist).direction).toBe('sube')
+  })
+})
+
 // Review follow-ups (Phase 3 review): harden rounding + gasto=0 edge
 describe('review hardening', () => {
   test('sweep rounds half-up, not ceil (fractional < .5 stays down)', () => {

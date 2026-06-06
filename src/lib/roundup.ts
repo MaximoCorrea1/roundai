@@ -16,6 +16,7 @@ export interface UserProfile {
   ingresoMensual: number // ARS
   gastoMensual: number // ARS — the round-up base
   liquidezFinDeMes: number[] // last 6 months, end-of-month liquidity (ARS)
+  gastoMensualHist: number[] // last 6 months of monthly spend (ARS); LAST === gastoMensual (spec #28)
 }
 
 export class ValidationError extends Error {
