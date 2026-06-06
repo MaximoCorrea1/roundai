@@ -8,6 +8,8 @@ import { WalletHome } from '@/components/wallet/WalletHome'
 import { ChatScreen } from '@/components/roundai/ChatScreen'
 import { PaymentSheet } from '@/components/wallet/PaymentSheet'
 import { PaymentSuccess } from '@/components/wallet/PaymentSuccess'
+import { ACTIVE_PROFILE_ID } from '@/data/profiles'
+import { nextCue, type Cue } from '@/lib/demo-cues'
 import { strings } from '@/data/strings'
 
 // A paid transaction held in-session, wrapped with the sweep it generated. We
@@ -317,6 +319,7 @@ export function AppShell({
     // `screen` so React remounts and re-triggers it. The animation is a paint-only
     // transform on an already-correctly-positioned box, so it never mis-positions;
     // it's also reduced-motion-safe (the keyframe is disabled in that media query).
+    <DemoContext.Provider value={{ cuesEnabled, activeCue }}>
     <div className="relative h-full w-full overflow-hidden">
       <style>{SLIDE_CSS}</style>
       <div
@@ -369,6 +372,7 @@ export function AppShell({
         </div>
       )}
     </div>
+    </DemoContext.Provider>
   )
 }
 

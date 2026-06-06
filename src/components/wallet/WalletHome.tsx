@@ -1,10 +1,12 @@
 'use client'
 
-import { activeProfile, ACTIVE_PROFILE_ID } from '@/data/profiles'
+import { profiles } from '@/data/profiles'
 import { transactionsFor } from '@/data/transactions'
 import { strings } from '@/data/strings'
 import { formatARS } from '@/lib/roundup'
 import type { SessionTxn } from '@/components/AppShell'
+import { useCueActive } from '@/components/AppShell'
+import { CueDot } from '@/components/CueDot'
 import { BalanceCard } from './BalanceCard'
 import { TransactionList } from './TransactionList'
 import { BottomNav } from './BottomNav'
@@ -88,9 +90,17 @@ export function WalletHome({
 
         {/* action row */}
         <div className="grid shrink-0 grid-cols-3 gap-2.5">
-          <ActionButton label={w.actions.pay} onClick={onPay}>
-            <PayIcon />
-          </ActionButton>
+          <div className="relative">
+            <ActionButton label={w.actions.pay} onClick={onPay}>
+              <PayIcon />
+            </ActionButton>
+            {/* demo cue (decision #32): mark Pagar once roundai is live + unpaid */}
+            <CueDot
+              show={showPayCue}
+              label={strings.demo.cueLabels.pay}
+              className="absolute -right-1 -top-1"
+            />
+          </div>
           <ActionButton label={w.actions.transfer}>
             <TransferIcon />
           </ActionButton>
@@ -100,12 +110,18 @@ export function WalletHome({
         </div>
 
         {/* THE roundai tile — between balance and ledger, prominent */}
-        <div className="shrink-0">
+        <div className="relative shrink-0">
           <RoundaiTile
             title={w.roundaiTile.title}
             poweredBy={w.roundaiTile.poweredBy}
             cta={w.roundaiTile.cta}
             onOpenRoundai={onOpenRoundai}
+          />
+          {/* demo cue (decision #32): mark the entry tile before onboarding starts */}
+          <CueDot
+            show={showTileCue}
+            label={strings.demo.cueLabels.tile}
+            className="absolute right-2 top-2"
           />
         </div>
 

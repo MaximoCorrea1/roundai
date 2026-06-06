@@ -2,6 +2,8 @@
 
 import type { Dispatch } from 'react'
 import type { AppState, Action } from '@/components/AppShell'
+import { useCueActive } from '@/components/AppShell'
+import { CueDot } from '@/components/CueDot'
 import { strings } from '@/data/strings'
 
 // The miniapp chrome — and the boundary between the two worlds. A deep-green bar
@@ -20,6 +22,7 @@ export function MiniappHeader({
 }) {
   const goalEnabled = state.marginFraction != null
   const m = strings.miniapp
+  const showGoalCue = useCueActive('goalTab')
 
   return (
     <header className="relative shrink-0 bg-roundai-green pt-[52px]">
@@ -75,12 +78,20 @@ export function MiniappHeader({
             enabled
             onClick={() => dispatch({ type: 'SWITCH_VIEW', view: 'chat' })}
           />
-          <Tab
-            label={m.tabs.goal}
-            active={state.view === 'goal'}
-            enabled={goalEnabled}
-            onClick={() => goalEnabled && dispatch({ type: 'SWITCH_VIEW', view: 'goal' })}
-          />
+          <div className="relative flex flex-1">
+            <Tab
+              label={m.tabs.goal}
+              active={state.view === 'goal'}
+              enabled={goalEnabled}
+              onClick={() => goalEnabled && dispatch({ type: 'SWITCH_VIEW', view: 'goal' })}
+            />
+            {/* demo cue (decision #32): mark Mi meta after a sweep lands */}
+            <CueDot
+              show={showGoalCue}
+              label={strings.demo.cueLabels.goalTab}
+              className="absolute -right-1 -top-1"
+            />
+          </div>
         </div>
       </div>
     </header>

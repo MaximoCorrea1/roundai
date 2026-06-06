@@ -312,7 +312,7 @@ function ProposalBlock({
       <div className="flex w-full justify-start">
         <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[14px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]">
           {before}
-          <MarginChip label={renderedCurrent} onTap={() => setOpen((v) => !v)} />
+          <MarginChip label={renderedCurrent} onTap={() => setOpen((v) => !v)} cueHidden={open} />
           {after}
         </div>
       </div>
@@ -344,23 +344,41 @@ function ProposalBlock({
   )
 }
 
-// The lime, ✦, subtly-pulsing tappable margin chip (decision #27).
-function MarginChip({ label, onTap }: { label: string; onTap: () => void }) {
+// The lime, ✦, subtly-pulsing tappable margin chip (decision #27). When the demo
+// cue points here (and the tweaker isn't already open) a small pulse-dot trails
+// the chip — backdrop chrome, gated by ?guia= and nextCue(state).
+function MarginChip({
+  label,
+  onTap,
+  cueHidden,
+}: {
+  label: string
+  onTap: () => void
+  cueHidden: boolean
+}) {
+  const showCue = useCueActive('marginChip')
   return (
-    <button
-      type="button"
-      onClick={onTap}
-      className="roundai-margin-chip mx-0.5 inline-flex items-center gap-1 rounded-full bg-lime px-2 py-0.5 align-baseline text-[13px] font-semibold text-roundai-green-deep ring-1 ring-lime-deep/40 transition-transform active:scale-95"
-    >
-      <style>{MARGIN_CHIP_CSS}</style>
-      <span aria-hidden="true" className="text-[10px]">
-        ✦
-      </span>
-      <span className="tnum">{label}</span>
-      <span className="text-[9px] font-medium text-roundai-green/60">
-        {strings.tweaker.chipHint}
-      </span>
-    </button>
+    <span className="relative mx-0.5 inline-flex items-center align-baseline">
+      <button
+        type="button"
+        onClick={onTap}
+        className="roundai-margin-chip inline-flex items-center gap-1 rounded-full bg-lime px-2 py-0.5 align-baseline text-[13px] font-semibold text-roundai-green-deep ring-1 ring-lime-deep/40 transition-transform active:scale-95"
+      >
+        <style>{MARGIN_CHIP_CSS}</style>
+        <span aria-hidden="true" className="text-[10px]">
+          ✦
+        </span>
+        <span className="tnum">{label}</span>
+        <span className="text-[9px] font-medium text-roundai-green/60">
+          {strings.tweaker.chipHint}
+        </span>
+      </button>
+      <CueDot
+        show={showCue && !cueHidden}
+        label={strings.demo.cueLabels.marginChip}
+        className="ml-1"
+      />
+    </span>
   )
 }
 
