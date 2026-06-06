@@ -156,6 +156,7 @@ export function ChatScreen({
           <MessageList
             messages={state.messages}
             showTyping={state.coachStatus === 'typing'}
+            pinKey={`${state.chatPhase}:${proposalDone}`}
           >
             {state.chatPhase === 'goalSelect' && (
               <OptionButtons onSelect={handleSelectGoal} />
