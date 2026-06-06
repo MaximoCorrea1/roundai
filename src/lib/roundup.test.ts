@@ -3,6 +3,8 @@ import { profiles } from '../data/profiles'
 import { transactionsFor } from '../data/transactions'
 import {
   computeOptimalMargin,
+  isSustainable,
+  monthlyContribution,
   RISK_TO_MARGIN,
   clampMargin,
   savingsCapacity,
@@ -61,5 +63,29 @@ describe('computeOptimalMargin', () => {
   })
   test('zero-capacity profile → 0', () => {
     expect(computeOptimalMargin({ ...mati, liquidezFinDeMes: [0, 0, 0] })).toBe(0)
+  })
+})
+
+describe('monthlyContribution', () => {
+  test('mati @ 0.07 → 82.600', () => {
+    expect(monthlyContribution(mati, 0.07)).toBeCloseTo(82_600, 6)
+  })
+  test('negative margin → ValidationError', () => {
+    expect(() => monthlyContribution(mati, -0.05)).toThrow(ValidationError)
+  })
+  test('negative gasto → ValidationError', () => {
+    expect(() => monthlyContribution({ ...mati, gastoMensual: -1 }, 0.07)).toThrow(ValidationError)
+  })
+})
+
+describe('isSustainable', () => {
+  test('mati @ 0.07 (82.600 ≤ 108.333) is sustainable', () => {
+    expect(isSustainable(mati, 0.07)).toBe(true)
+  })
+  test('mati @ 0.10 (118.000 > 108.333) is not sustainable', () => {
+    expect(isSustainable(mati, 0.1)).toBe(false)
+  })
+  test('margin 0 is never sustainable', () => {
+    expect(isSustainable(mati, 0)).toBe(false)
   })
 })

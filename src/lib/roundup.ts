@@ -54,3 +54,15 @@ export function computeOptimalMargin(profile: UserProfile): number {
     Math.min(RISK_TO_MARGIN[profile.riskProfile] ?? RISK_TO_MARGIN.moderado, cap / profile.gastoMensual),
   )
 }
+
+/** Monthly amount swept at the given margin: margin × gastoMensual. */
+export function monthlyContribution(profile: UserProfile, margin: number): number {
+  if (margin < 0 || profile.gastoMensual < 0)
+    throw new ValidationError(`negative input: margin=${margin}, gasto=${profile.gastoMensual}`)
+  return margin * profile.gastoMensual
+}
+
+/** True iff the margin is positive AND its contribution fits within savings capacity. */
+export function isSustainable(profile: UserProfile, margin: number): boolean {
+  return margin > 0 && monthlyContribution(profile, margin) <= savingsCapacity(profile)
+}
