@@ -3,7 +3,10 @@ import { profiles } from '../data/profiles'
 import { transactionsFor } from '../data/transactions'
 import {
   computeOptimalMargin,
+  formatARS,
+  formatPct,
   isSustainable,
+  liquidityBand,
   monthlyContribution,
   monthsToGoal,
   RISK_TO_MARGIN,
@@ -107,5 +110,31 @@ describe('monthsToGoal', () => {
     const r = monthsToGoal(lu, computeOptimalMargin(lu), 2_000_000)
     expect(r.reachable).toBe(true)
     expect(r.months!).toBeGreaterThan(100)
+  })
+})
+
+describe('formatARS', () => {
+  test('es-AR currency, no decimals, NBSP after $ normalized', () => {
+    // The char after $ is U+00A0 — normalize it before comparing (escaped, not pasted).
+    expect(formatARS(1_234_567).replace(/\u00A0/g, ' ')).toBe('$ 1.234.567')
+  })
+})
+
+describe('formatPct', () => {
+  test('es-AR percent, max 1 decimal — pinned to real Node ICU output', () => {
+    // Verified runtime output: Node emits "7%" (no space). Normalize NBSP for safety.
+    expect(formatPct(0.07).replace(/\u00A0/g, ' ')).toBe('7%')
+  })
+})
+
+describe('liquidityBand', () => {
+  test('mati ratio ≈ 0.092 → media', () => {
+    expect(liquidityBand(mati)).toBe('media')
+  })
+  test('lu ratio ≈ 0.020 → baja', () => {
+    expect(liquidityBand(lu)).toBe('baja')
+  })
+  test('fede ratio ≈ 0.265 → alta', () => {
+    expect(liquidityBand(fede)).toBe('alta')
   })
 })

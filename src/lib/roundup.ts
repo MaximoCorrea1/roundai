@@ -78,3 +78,25 @@ export function monthsToGoal(
   if (contribution <= 0) return { reachable: false, months: null }
   return { reachable: true, months: Math.ceil(goalAmount / contribution) }
 }
+
+/** Format an ARS amount, es-AR, no decimals (emits a NBSP after `$`; spec decision #17). */
+export function formatARS(n: number): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(n)
+}
+
+/** Format a fraction as an es-AR percentage with up to 1 decimal. */
+export function formatPct(f: number): string {
+  return new Intl.NumberFormat('es-AR', { style: 'percent', maximumFractionDigits: 1 }).format(f)
+}
+
+/** Liquidity band from capacity/gasto ratio: < 0.05 baja, < 0.25 media, else alta. */
+export function liquidityBand(profile: UserProfile): 'baja' | 'media' | 'alta' {
+  const ratio = savingsCapacity(profile) / profile.gastoMensual
+  if (ratio < 0.05) return 'baja'
+  if (ratio < 0.25) return 'media'
+  return 'alta'
+}
