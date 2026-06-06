@@ -1,4 +1,140 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────────────
+   roundai design tokens — LOCKED Phase 1 (Task 1.1)
+   Two-layer system: the contrast IS the B2B pitch.
+   · Layer 1 "Nimbo" (host wallet): cool slate/blue-grey, white surfaces, tidy.
+     Deliberately conventional — reads as "a real wallet app."
+   · Layer 2 "roundai" (embedded brand): deep green + warm cream + ONE lime.
+   Values mirrored in design.md → keep both in sync.
+   ───────────────────────────────────────────────────────────────────────── */
 @theme {
+  /* ── roundai layer ── */
+  --color-roundai-green: #0b3d2e; /* primary field */
+  --color-roundai-green-deep: #072a20; /* shadow / mesh base */
+  --color-roundai-green-soft: #12513c; /* raised surface in the green field */
+  --color-cream: #faf5ec; /* warm surface */
+  --color-cream-dim: #ece3d2; /* cream hairline / muted */
+  --color-lime: #c8f560; /* THE single accent — round-up / growth / the sweep */
+  --color-lime-deep: #a9da3e; /* lime pressed / on cream for contrast */
+
+  /* ── Nimbo (host wallet) layer ── */
+  --color-nimbo-surface: #ffffff; /* card surfaces */
+  --color-nimbo-bg: #f4f6f9; /* app canvas behind cards (cool off-white) */
+  --color-nimbo-slate: #5b6b82; /* neutral chrome / secondary icons */
+  --color-nimbo-slate-deep: #2b3a4f; /* slate headings / active nav */
+  --color-nimbo-line: #e6eaf0; /* hairline borders / dividers */
+  --color-nimbo-tint: #eef2f8; /* chip / action-button fill */
+  --color-nimbo-blue: #2f6df0; /* the wallet's restrained primary blue */
+
+  /* ── ink / text (shared) ── */
+  --color-ink: #131a24; /* primary text */
+  --color-muted: #76839a; /* secondary text */
+
+  /* ── fonts (wired to next/font CSS variables from layout.tsx) ── */
+  --font-display: var(--font-display), "Bricolage Grotesque", sans-serif;
+  --font-body: var(--font-body), "Hanken Grotesk", sans-serif;
+  --font-mono: var(--font-mono), "Spline Sans Mono", ui-monospace, monospace;
+
+  /* ── radius scale ── */
+  --radius-sm: 8px; /* chips, small controls */
+  --radius-md: 16px; /* cards, bubbles */
+  --radius-lg: 24px; /* sheets, balance card */
+  --radius-xl: 32px; /* large panels */
+  --radius-phone: 58px; /* iPhone bezel corner */
+
+  /* ── shadow scale ── */
+  --shadow-card: 0 1px 2px rgba(20, 30, 45, 0.04), 0 8px 24px -12px rgba(20, 30, 45, 0.12); /* wallet cards */
+  --shadow-sheet: 0 -8px 40px -8px rgba(20, 30, 45, 0.22); /* payment sheet / modals (upward) */
+  --shadow-phone: 0 50px 120px -30px rgba(0, 0, 0, 0.55), 0 12px 40px -12px rgba(0, 0, 0, 0.4); /* device on the backdrop */
+  --shadow-tile: 0 10px 30px -10px rgba(7, 42, 32, 0.55); /* roundai tile lift on white */
+}
+
+/* The phone scaler: a CSS-only fit so the 393×852 frame always sits inside the
+   viewport with margin — critical because 852px is taller than a 720p projector.
+   --phone-w / --phone-h drive the scale; transform-origin center. No JS. */
+:root {
+  --phone-w: 393px;
+  --phone-h: 852px;
+  --phone-margin: 24px;
+  /* scale so BOTH dimensions fit (height is the binding constraint at 720p) */
+  --phone-scale: min(
+    1,
+    calc((100vh - (2 * var(--phone-margin))) / var(--phone-h)),
+    calc((100vw - (2 * var(--phone-margin))) / var(--phone-w))
+  );
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ALL monetary figures align — tabular-nums + the mono face. Applied via the
+   .tnum utility on every amount span across both layers. */
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.01em;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* roundai tile breathing glow — slow, subtle, draws the judge's eye without
+   being a carnival. One accent (lime), gentle pulse. Respects reduced-motion. */
+@keyframes roundai-pulse {
+  0%,
+  100% {
+    box-shadow: var(--shadow-tile), 0 0 0 0 rgba(200, 245, 96, 0);
+  }
+  50% {
+    box-shadow: var(--shadow-tile), 0 0 0 6px rgba(200, 245, 96, 0.12);
+  }
+}
+
+@keyframes roundai-glint {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+.roundai-tile {
+  animation: roundai-pulse 4.2s ease-in-out infinite;
+}
+.roundai-glint {
+  animation: roundai-glint 4.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roundai-tile,
+  .roundai-glint {
+    animation: none;
+  }
+}
+
+/* Hide scrollbar chrome inside the phone (the ledger scrolls internally). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

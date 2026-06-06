@@ -1,52 +1,62 @@
 # Design system
 
-> **All values below are provisional** until locked in Phase 1 (Task 1.1). Final values are a `frontend-design` decision and live in `src/app/globals.css` under the Tailwind v4 `@theme` block — this doc and that file move together.
+> **Token values are LOCKED Phase 1 (Task 1.1).** They live in `src/app/globals.css` under the Tailwind v4 `@theme` block and are mirrored here — this doc and that file move together. Locked via the `frontend-design` skill.
 >
 > **Mandate: every UI task goes through the `frontend-design` skill — no exceptions.** No generic AI aesthetics: no Inter/Roboto/system fonts, no purple gradients, no default-template energy.
 
 ## Design tokens
 
-Tokens are declared as CSS variables inside `@theme` in `src/app/globals.css`. Names below are the contract; values are provisional (see `brand.md` for palette/type rationale).
+Tokens are declared as CSS variables inside `@theme` in `src/app/globals.css`. Names below are the contract (see `brand.md` for palette/type rationale).
 
-### Color
+### Color (locked Phase 1)
 
-| Token | Provisional value | Use |
+| Token | Value | Use |
 |---|---|---|
 | `--color-roundai-green` | `#0B3D2E` | roundai layer primary field |
+| `--color-roundai-green-deep` | `#072A20` | roundai shadow / mesh base |
+| `--color-roundai-green-soft` | `#12513C` | raised surface inside the green field |
 | `--color-cream` | `#FAF5EC` | roundai warm surface |
+| `--color-cream-dim` | `#ECE3D2` | cream hairline / muted |
 | `--color-lime` | `#C8F560` | the single accent — round-up / growth / the sweep |
-| `--color-nimbo-surface` | white | host wallet card surfaces |
-| `--color-nimbo-slate` | cool slate/blue | host wallet neutral chrome |
-| `--color-ink` | near-black | primary text |
-| `--color-muted` | mid-gray | secondary text |
+| `--color-lime-deep` | `#A9DA3E` | lime pressed / on cream for contrast |
+| `--color-nimbo-surface` | `#FFFFFF` | host wallet card surfaces |
+| `--color-nimbo-bg` | `#F4F6F9` | host wallet app canvas (cool off-white) |
+| `--color-nimbo-slate` | `#5B6B82` | host wallet neutral chrome / secondary icons |
+| `--color-nimbo-slate-deep` | `#2B3A4F` | slate headings / active nav |
+| `--color-nimbo-line` | `#E6EAF0` | hairline borders / dividers |
+| `--color-nimbo-tint` | `#EEF2F8` | chip / action-button fill |
+| `--color-nimbo-blue` | `#2F6DF0` | the wallet's restrained primary blue |
+| `--color-ink` | `#131A24` | primary text |
+| `--color-muted` | `#76839A` | secondary text |
 
-### Spacing
+### Typography (locked Phase 1)
 
-| Token | Provisional value |
-|---|---|
-| `--space-1` | 4px |
-| `--space-2` | 8px |
-| `--space-3` | 12px |
-| `--space-4` | 16px |
-| `--space-6` | 24px |
-| `--space-8` | 32px |
+Loaded via `next/font/google` in `src/app/layout.tsx`, exposed as CSS variables and wired into `@theme`.
 
-### Radius
+| Token | Family | Use |
+|---|---|---|
+| `--font-display` | **Bricolage Grotesque** (variable, no weight key) | wordmark, headings, the roundai personality |
+| `--font-body` | **Hanken Grotesk** | body copy, chat, chrome (refined, non-generic; NOT Inter/Roboto) |
+| `--font-mono` | **Spline Sans Mono** | ALL monetary figures — guarantees tabular column alignment (`.tnum` utility: `font-variant-numeric: tabular-nums`) |
 
-| Token | Provisional value | Use |
+### Radius (locked Phase 1)
+
+| Token | Value | Use |
 |---|---|---|
 | `--radius-sm` | 8px | chips, small controls |
 | `--radius-md` | 16px | cards, bubbles |
 | `--radius-lg` | 24px | sheets, the balance card |
-| `--radius-phone` | 56px | iPhone bezel corner |
+| `--radius-xl` | 32px | large panels |
+| `--radius-phone` | 58px | iPhone bezel corner |
 
-### Shadow
+### Shadow (locked Phase 1)
 
-| Token | Provisional value | Use |
+| Token | Value | Use |
 |---|---|---|
-| `--shadow-card` | soft, low-spread | wallet cards |
-| `--shadow-sheet` | larger, upward | payment sheet / modals |
-| `--shadow-phone` | deep ambient | the phone frame on the backdrop |
+| `--shadow-card` | `0 1px 2px rgba(20,30,45,.04), 0 8px 24px -12px rgba(20,30,45,.12)` | wallet cards |
+| `--shadow-sheet` | `0 -8px 40px -8px rgba(20,30,45,.22)` | payment sheet / modals (upward) |
+| `--shadow-phone` | `0 50px 120px -30px rgba(0,0,0,.55), 0 12px 40px -12px rgba(0,0,0,.4)` | the phone frame on the backdrop |
+| `--shadow-tile` | `0 10px 30px -10px rgba(7,42,32,.55)` | roundai tile lift on white |
 
 ## iPhone frame spec
 
