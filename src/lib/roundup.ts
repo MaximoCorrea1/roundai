@@ -21,3 +21,10 @@ export class ValidationError extends Error {
     this.name = 'ValidationError'
   }
 }
+
+/** Average end-of-month liquidity over the recorded months; empty history → 0. */
+export function savingsCapacity(profile: UserProfile): number {
+  const xs = profile.liquidezFinDeMes
+  if (xs.length === 0) return 0
+  return xs.reduce((a, b) => a + b, 0) / xs.length
+}
