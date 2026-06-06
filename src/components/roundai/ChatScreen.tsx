@@ -13,6 +13,7 @@ import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { OptionButtons } from './OptionButtons'
 import { AmountInput } from './AmountInput'
+import { GoalScreen } from './GoalScreen'
 
 // The roundai miniapp surface — a visibly different world from Nimbo: warm cream
 // background, deep-green chrome, one lime accent, same phone. Composes the
@@ -174,11 +175,7 @@ export function ChatScreen({
           <ChatInput enabled={canSend} onSend={sendMessage} />
         </>
       ) : (
-        <div className="flex flex-1 items-center justify-center px-8 text-center">
-          <p className="font-display text-[15px] font-medium text-roundai-green/45">
-            {strings.goal.comingSoon}
-          </p>
-        </div>
+        <GoalScreen state={state} />
       )}
     </div>
   )
