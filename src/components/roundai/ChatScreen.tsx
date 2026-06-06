@@ -6,6 +6,7 @@ import type { GoalType } from '@/lib/chat-types'
 import { activeProfile } from '@/data/profiles'
 import { savingsCapacity, computeOptimalMargin, formatARS } from '@/lib/roundup'
 import { buildProposalMessages, hasSustainableProposal } from '@/lib/proposal'
+import { useChat } from '@/lib/useChat'
 import { strings } from '@/data/strings'
 import { MiniappHeader } from './MiniappHeader'
 import { MessageList } from './MessageList'
@@ -36,6 +37,10 @@ export function ChatScreen({
   active: boolean
 }) {
   const isLive = state.chatPhase === 'live'
+  const { sendMessage } = useChat(state, dispatch)
+  // Composer is enabled only when live AND the coach is idle — blocks double-send
+  // while typing/streaming/fallback, re-enabled the moment the turn completes.
+  const canSend = isLive && state.coachStatus === 'idle'
   // Local UI flag (not reducer state): the proposal sequence has fully landed,
   // so it's time to reveal the consent CTA. Avoids flashing it between bubbles.
   const [proposalReady, setProposalReady] = useState(false)
@@ -166,7 +171,7 @@ export function ChatScreen({
             )}
             {proposalDone && <ConsentCTA onAccept={handleAccept} />}
           </MessageList>
-          <ChatInput enabled={isLive} />
+          <ChatInput enabled={canSend} onSend={sendMessage} />
         </>
       ) : (
         <div className="flex flex-1 items-center justify-center px-8 text-center">

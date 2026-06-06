@@ -32,6 +32,11 @@ export interface AppState {
   payment: 'idle' | 'sheet' | 'success' // payment UI lands Phase 6; reducer support now
   balance: number
   goalProgress: number // accumulated sweeps from in-session payments
+  // Index into `messages` where the LIVE conversation begins (everything before
+  // it is onboarding, already represented by the seeded history). Captured at
+  // ACCEPT_PROPOSAL so useChat can slice live turns without recomputing the
+  // boundary heuristically. -1 until the proposal is accepted.
+  liveStartIndex: number
 }
 
 export type Action =
@@ -60,6 +65,7 @@ const initialState: AppState = {
   payment: 'idle',
   balance: BALANCE_INICIAL,
   goalProgress: 0,
+  liveStartIndex: -1,
 }
 
 export function appReducer(state: AppState, action: Action): AppState {
@@ -81,11 +87,15 @@ export function appReducer(state: AppState, action: Action): AppState {
       }
 
     case 'ACCEPT_PROPOSAL':
+      // Live turns begin AFTER the activated-confirmation bubble that ChatScreen
+      // pushes immediately after this action (hence +1). Everything up to and
+      // including that bubble is onboarding, replaced by seedHistory on the wire.
       return {
         ...state,
         marginFraction: action.marginFraction,
         chatPhase: 'live',
         coachStatus: 'idle',
+        liveStartIndex: state.messages.length + 1,
       }
 
     case 'PUSH_MESSAGE':
@@ -142,6 +152,13 @@ export function appReducer(state: AppState, action: Action): AppState {
 export function AppShell() {
   const [state, dispatch] = useReducer(appReducer, initialState)
   const animate = useAnimateSlides()
+
+  // Silent serverless pre-warm: hit /api/health once on mount so the first real
+  // /api/chat call doesn't pay cold-start latency. Fire-and-forget; never blocks
+  // or surfaces UI. (Use ?ping=1 in the demo checklist for a live 1-token warm.)
+  useEffect(() => {
+    fetch('/api/health').catch(() => {})
+  }, [])
 
   const atMiniapp = state.screen === 'miniapp'
 

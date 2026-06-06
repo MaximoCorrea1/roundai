@@ -22,6 +22,12 @@ export const strings = {
     tabs: { chat: 'Coach', goal: 'Mi meta' },
     inputPlaceholder: 'Escribile a tu coach…',
   },
+  // Screen-reader labels (no hardcoded aria-label strings in components).
+  a11y: {
+    sendMessage: 'Enviar',
+    backToWallet: 'Volver a la billetera',
+    coachTyping: 'El coach está escribiendo',
+  },
   onboarding: {
     goalOptions: {
       rendir: 'Quiero que mi plata rinda',

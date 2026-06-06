@@ -57,7 +57,7 @@ export function ChatInput({
           type="button"
           onClick={send}
           disabled={!canSend}
-          aria-label="Enviar"
+          aria-label={strings.a11y.sendMessage}
           className={
             'grid h-9 w-9 shrink-0 place-items-center rounded-full transition-all ' +
             (canSend
