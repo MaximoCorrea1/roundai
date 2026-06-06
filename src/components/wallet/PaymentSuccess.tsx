@@ -1,17 +1,22 @@
 'use client'
 
+import type { RiskProfile } from '@/lib/roundup'
 import { DEMO_PAYMENT } from '@/data/transactions'
 import { formatARS, formatPct } from '@/lib/roundup'
 import { strings } from '@/data/strings'
 
-// Payment success (spec #23) — the causal-loop payoff. A check lands, then (with
-// roundai active) the split unfolds: the comercio got the full amount, AND a
-// slice quietly swept into the goal. The quiet counterfactual ("sin roundai: $0
-// a tu meta") sells the before/after with zero extra state.
+// Payment success, v2 (spec decision #31) — the causal-loop payoff. A check
+// lands, then (when a sweep happened) the split unfolds SPLIT-FIRST: the biggest
+// thing on screen is the money that moved (al comercio + a tu meta), then the
+// quiet line naming where the sweep went, then the counterfactual that sells the
+// before/after. Hierarchy is tightened: nothing that doesn't add signal.
 //
-// With roundai INACTIVE (marginFraction == null, sweep 0): a PLAIN success — no
-// split, no counterfactual — which is the implicit "before" if the presenter
-// pays before activating.
+// Three states, all derivable from the props already in hand:
+// - swept (active && sweep > 0): full split + destination + "sin roundai" line.
+// - toggle OFF (active && sweep === 0): the user flipped round-up off on the
+//   sheet — show ONE quiet line (toggleOffHint), no split.
+// - pre-activation (marginFraction == null): a PLAIN success — no split, no
+//   hint — the implicit "before" if the presenter pays before activating.
 //
 // All money comes pre-computed: `sweep` is the reducer's stored sweep for this
 // payment; formatting is the calculator's (formatARS / formatPct). No math here.
@@ -19,14 +24,20 @@ import { strings } from '@/data/strings'
 export function PaymentSuccess({
   sweep,
   marginFraction,
+  sessionRisk,
   onClose,
 }: {
   sweep: number
   marginFraction: number | null
+  // Session investor profile (state.sessionRisk) — names the FCI the sweep funds.
+  // Optional so the success screen still type-checks before AppShell threads it.
+  sessionRisk?: RiskProfile | null
   onClose: () => void
 }) {
   const p = strings.payment
   const active = marginFraction != null
+  const swept = active && sweep > 0
+  const toggledOff = active && sweep === 0 // round-up was switched off on the sheet
 
   return (
     <div className="absolute inset-0">
@@ -70,8 +81,8 @@ export function PaymentSuccess({
           </p>
         </div>
 
-        {/* the split — only with roundai active */}
-        {active ? (
+        {/* the split — biggest thing on screen when a sweep happened */}
+        {swept && (
           <div className="mt-8">
             <div className="rounded-[var(--radius-lg)] bg-nimbo-surface p-5 shadow-[var(--shadow-card)]">
               {/* al comercio */}
@@ -94,17 +105,24 @@ export function PaymentSuccess({
                 </div>
                 <span className="tnum text-[19px] font-semibold text-lime-deep">+{formatARS(sweep)}</span>
               </div>
+
+              {/* a dónde va — names the FCI the sweep funds (sessionRisk) */}
+              {sessionRisk && (
+                <p className="roundai-sweep-caption mt-2.5 text-[11.5px] text-roundai-green/55">
+                  {interpolate(p.destination, { perfil: sessionRisk })}
+                </p>
+              )}
             </div>
 
-            {/* sweep-landed micro-headline */}
-            <p className="roundai-sweep-caption mt-3 text-center text-[12.5px] font-medium text-roundai-green/70">
-              {p.sweepLanded}
-            </p>
-
-            {/* the quiet counterfactual */}
-            <p className="mt-1.5 text-center text-[11.5px] text-roundai-green/40">{p.withoutRoundai}</p>
+            {/* the quiet counterfactual — only reinforces WHEN a sweep happened */}
+            <p className="mt-3 text-center text-[11.5px] text-roundai-green/40">{p.withoutRoundai}</p>
           </div>
-        ) : null}
+        )}
+
+        {/* toggle was OFF — one quiet line instead of the split */}
+        {toggledOff && (
+          <p className="mt-8 text-center text-[12.5px] text-roundai-green/45">{p.toggleOffHint}</p>
+        )}
 
         {/* done */}
         <div className="mt-auto">
