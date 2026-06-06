@@ -1,8 +1,8 @@
 // ⭐ THE one calculator (spec decision #10): every number on screen and in the
 // coach's prompt derives from this pure module. No React, no server imports.
 //
-// Phase 1: type declarations only. Implementations land in Phase 3 via TDD —
-// do NOT add functions here without a failing test first (see docs/plan.md §Phase 3).
+// Maintained TDD-style: do NOT add or change behavior here without a failing
+// test first in roundup.test.ts (see docs/plan.md §Phase 3).
 
 import type { Transaction } from '../data/transactions'
 import { TNA_SIMULADA } from './config'
@@ -51,6 +51,8 @@ export function clampMargin(f: number): number {
 
 /** Sustainable margin: min(risk-table rate, capacity/gasto), clamped; capacity ≤ 0 → 0. */
 export function computeOptimalMargin(profile: UserProfile): number {
+  if (profile.gastoMensual <= 0)
+    throw new ValidationError(`gastoMensual must be positive: ${profile.gastoMensual}`)
   const cap = savingsCapacity(profile)
   if (cap <= 0) return 0
   return clampMargin(
@@ -98,6 +100,8 @@ export function formatPct(f: number): string {
 
 /** Liquidity band from capacity/gasto ratio: < 0.05 baja, < 0.25 media, else alta. */
 export function liquidityBand(profile: UserProfile): 'baja' | 'media' | 'alta' {
+  if (profile.gastoMensual <= 0)
+    throw new ValidationError(`gastoMensual must be positive: ${profile.gastoMensual}`)
   const ratio = savingsCapacity(profile) / profile.gastoMensual
   if (ratio < 0.05) return 'baja'
   if (ratio < 0.25) return 'media'

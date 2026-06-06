@@ -56,12 +56,14 @@
 :root {
   --phone-w: 393px;
   --phone-h: 852px;
+  --phone-bezel: 12px; /* frame padding around the screen */
   --phone-margin: 24px;
-  /* scale so BOTH dimensions fit (height is the binding constraint at 720p) */
+  /* scale so BOTH dimensions of the FULL frame (screen + bezel) fit
+     (height is the binding constraint at 720p) */
   --phone-scale: min(
     1,
-    calc((100vh - (2 * var(--phone-margin))) / var(--phone-h)),
-    calc((100vw - (2 * var(--phone-margin))) / var(--phone-w))
+    calc((100vh - (2 * var(--phone-margin))) / (var(--phone-h) + 2 * var(--phone-bezel))),
+    calc((100vw - (2 * var(--phone-margin))) / (var(--phone-w) + 2 * var(--phone-bezel)))
   );
 }
 

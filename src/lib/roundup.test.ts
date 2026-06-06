@@ -195,3 +195,19 @@ describe('ledger discipline (spec decision #24)', () => {
     expect(sum).toBe(profile.gastoMensual)
   })
 })
+
+// Review follow-ups (Phase 3 review): harden rounding + gasto=0 edge
+describe('review hardening', () => {
+  test('sweep rounds half-up, not ceil (fractional < .5 stays down)', () => {
+    // 0.07 × 4.320 = 302,4 → round 302 (ceil would say 303)
+    expect(sweepForPayment(4_320, 0.07)).toBe(302)
+  })
+  test('gastoMensual <= 0 throws in ratio-based functions', () => {
+    const broke = { ...profiles[0], gastoMensual: 0 }
+    expect(() => computeOptimalMargin(broke)).toThrow(ValidationError)
+    expect(() => liquidityBand(broke)).toThrow(ValidationError)
+  })
+  test('empty ledger sweeps zero', () => {
+    expect(monthlySweepTotal([], 0.07)).toBe(0)
+  })
+})
