@@ -314,6 +314,9 @@ export function AppShell() {
           {state.payment === 'sheet' ? (
             <PaymentSheet
               marginFraction={state.marginFraction}
+              roundupEnabled={state.roundupEnabled}
+              sessionRisk={state.sessionRisk}
+              onToggle={() => dispatch({ type: 'TOGGLE_ROUNDUP' })}
               onConfirm={(tx, sweep) => dispatch({ type: 'CONFIRM_PAYMENT', tx, sweep })}
               onClose={() => dispatch({ type: 'CLOSE_PAYMENT' })}
             />
@@ -321,6 +324,7 @@ export function AppShell() {
             <PaymentSuccess
               sweep={state.sessionTxns[0]?.sweep ?? 0}
               marginFraction={state.marginFraction}
+              sessionRisk={state.sessionRisk}
               onClose={() => dispatch({ type: 'CLOSE_PAYMENT' })}
             />
           )}
