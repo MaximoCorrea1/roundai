@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type Dispatch } from 'react'
+import { useEffect, useState, type Dispatch } from 'react'
 import type { AppState, Action } from '@/components/AppShell'
 import type { GoalType } from '@/lib/chat-types'
 import { activeProfile } from '@/data/profiles'
@@ -36,30 +36,16 @@ export function ChatScreen({
   active: boolean
 }) {
   const isLive = state.chatPhase === 'live'
-  const greetingStarted = useRef(false)
-  const proposalStarted = useRef(false)
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   // Local UI flag (not reducer state): the proposal sequence has fully landed,
   // so it's time to reveal the consent CTA. Avoids flashing it between bubbles.
   const [proposalReady, setProposalReady] = useState(false)
 
-  // Clear any pending timers on unmount.
+  // Staggered greeting: fires once on first open. Strict-Mode-safe — each run
+  // owns its own timer list and clears it on cleanup, so the dev double-invoke
+  // (mount → cleanup → mount) simply re-schedules from scratch. The reducer's
+  // message state (guarded below) keeps it from doubling in production.
   useEffect(() => {
-    const list = timers.current
-    return () => {
-      for (const t of list) clearTimeout(t)
-    }
-  }, [])
-
-  const schedule = (fn: () => void, at: number) => {
-    timers.current.push(setTimeout(fn, at))
-  }
-
-  // Staggered greeting: fires once, the first time the miniapp is opened.
-  useEffect(() => {
-    if (!active || greetingStarted.current || state.messages.length > 0) return
-    if (state.chatPhase !== 'greeting') return
-    greetingStarted.current = true
+    if (!active || state.messages.length > 0 || state.chatPhase !== 'greeting') return
 
     const profile = activeProfile()
     const g = strings.onboarding.greeting
@@ -70,41 +56,59 @@ export function ChatScreen({
       g.pregunta,
     ]
 
+    const local: ReturnType<typeof setTimeout>[] = []
     let t = 0
     bubbles.forEach((text, i) => {
-      schedule(() => dispatch({ type: 'SET_STATUS', status: 'typing' }), t)
+      local.push(setTimeout(() => dispatch({ type: 'SET_STATUS', status: 'typing' }), t))
       t += STEP
-      schedule(() => {
-        dispatch({ type: 'PUSH_MESSAGE', message: { role: 'assistant', content: text } })
-        dispatch({ type: 'SET_STATUS', status: 'idle' })
-        if (i === bubbles.length - 1) dispatch({ type: 'SET_PHASE', phase: 'goalSelect' })
-      }, t)
+      local.push(
+        setTimeout(() => {
+          dispatch({ type: 'PUSH_MESSAGE', message: { role: 'assistant', content: text } })
+          dispatch({ type: 'SET_STATUS', status: 'idle' })
+          if (i === bubbles.length - 1) dispatch({ type: 'SET_PHASE', phase: 'goalSelect' })
+        }, t),
+      )
       t += STEP
     })
+    return () => {
+      for (const id of local) clearTimeout(id)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active])
 
-  // Proposal pacing: once a goal is set and we enter 'proposal', push the
-  // templated bubbles one at a time with typing pauses. Fires once.
+  // Proposal pacing: on entering 'proposal', push the templated bubbles one at a
+  // time with typing pauses. Strict-Mode-safe (self-clearing timers); idempotent
+  // across a remount — if an assistant bubble already follows the last user turn
+  // the proposal has begun, so we just reveal the CTA instead of re-pushing.
   useEffect(() => {
-    if (state.chatPhase !== 'proposal' || proposalStarted.current || !state.goal) return
-    proposalStarted.current = true
+    if (state.chatPhase !== 'proposal' || !state.goal) return
+    const last = state.messages[state.messages.length - 1]
+    if (last && last.role === 'assistant') {
+      setProposalReady(true)
+      return
+    }
 
     const profile = activeProfile()
     const bubbles = buildProposalMessages(profile, state.goal)
 
+    const local: ReturnType<typeof setTimeout>[] = []
     let t = PROPOSAL_STEP // a small beat before the first line
     bubbles.forEach((msg, i) => {
-      schedule(() => dispatch({ type: 'SET_STATUS', status: 'typing' }), t)
+      local.push(setTimeout(() => dispatch({ type: 'SET_STATUS', status: 'typing' }), t))
       t += PROPOSAL_STEP
-      schedule(() => {
-        dispatch({ type: 'PUSH_MESSAGE', message: msg })
-        dispatch({ type: 'SET_STATUS', status: 'idle' })
-        // reveal the CTA only after the FINAL bubble has landed
-        if (i === bubbles.length - 1) setProposalReady(true)
-      }, t)
+      local.push(
+        setTimeout(() => {
+          dispatch({ type: 'PUSH_MESSAGE', message: msg })
+          dispatch({ type: 'SET_STATUS', status: 'idle' })
+          // reveal the CTA only after the FINAL bubble has landed
+          if (i === bubbles.length - 1) setProposalReady(true)
+        }, t),
+      )
       t += PROPOSAL_STEP
     })
+    return () => {
+      for (const id of local) clearTimeout(id)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.chatPhase])
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useReducer } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import type { Goal, ChatMessage } from '@/lib/chat-types'
 import { WalletHome } from '@/components/wallet/WalletHome'
 import { ChatScreen } from '@/components/roundai/ChatScreen'
@@ -141,26 +141,73 @@ export function appReducer(state: AppState, action: Action): AppState {
 
 export function AppShell() {
   const [state, dispatch] = useReducer(appReducer, initialState)
+  const animate = useAnimateSlides()
 
   const atMiniapp = state.screen === 'miniapp'
 
   return (
-    // Two screens on a horizontal track inside the phone screen area. The track
-    // is 200% wide; a CSS transform slides it ~350ms ease. overflow-hidden lives
-    // on the PhoneFrame screen, so nothing escapes the bezel.
-    <div
-      className="flex h-full w-[200%] motion-safe:transition-transform motion-safe:duration-[350ms] motion-safe:ease-[cubic-bezier(0.4,0,0.2,1)]"
-      style={{ transform: atMiniapp ? 'translateX(-50%)' : 'translateX(0)' }}
-    >
-      <div className="h-full w-1/2 shrink-0" aria-hidden={atMiniapp}>
-        <WalletHome
-          balance={state.balance}
-          onOpenRoundai={() => dispatch({ type: 'OPEN_MINIAPP' })}
-        />
-      </div>
-      <div className="h-full w-1/2 shrink-0" aria-hidden={!atMiniapp}>
-        <ChatScreen state={state} dispatch={dispatch} active={atMiniapp} />
+    // The clipping viewport, exactly the phone-screen size. We render ONE screen
+    // at a time in NORMAL FLOW (a plain h-full block) — the only layout that
+    // positions correctly inside the CSS-scaled PhoneFrame; absolute/transform
+    // children of a scaled ancestor render in its un-scaled coordinate space and
+    // mis-place. The screen change gets a directional slide-in animation, keyed on
+    // `screen` so React remounts and re-triggers it. The animation is a paint-only
+    // transform on an already-correctly-positioned box, so it never mis-positions;
+    // it's also reduced-motion-safe (the keyframe is disabled in that media query).
+    <div className="relative h-full w-full overflow-hidden">
+      <style>{SLIDE_CSS}</style>
+      <div
+        key={state.screen}
+        className={
+          'h-full w-full ' +
+          (animate
+            ? atMiniapp
+              ? 'roundai-slide-from-right'
+              : 'roundai-slide-from-left'
+            : '')
+        }
+      >
+        {atMiniapp ? (
+          <ChatScreen state={state} dispatch={dispatch} active />
+        ) : (
+          <WalletHome
+            balance={state.balance}
+            onOpenRoundai={() => dispatch({ type: 'OPEN_MINIAPP' })}
+          />
+        )}
       </div>
     </div>
   )
 }
+
+/** True unless the user prefers reduced motion (defaults to animated pre-mount). */
+function useAnimateSlides(): boolean {
+  const [animate, setAnimate] = useState(true)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const apply = () => setAnimate(!mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+  return animate
+}
+
+// Directional slide-in for the active screen. Transform is paint-only on a
+// normal-flow, full-size box (correct position already), so it never mis-places.
+// Disabled under reduced-motion. Scoped here (globals.css is out of this surface).
+const SLIDE_CSS = `
+@keyframes roundai-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes roundai-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+.roundai-slide-from-right { animation: roundai-in-right 350ms cubic-bezier(0.4,0,0.2,1) both; }
+.roundai-slide-from-left { animation: roundai-in-left 350ms cubic-bezier(0.4,0,0.2,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .roundai-slide-from-right, .roundai-slide-from-left { animation: none; }
+}
+`
