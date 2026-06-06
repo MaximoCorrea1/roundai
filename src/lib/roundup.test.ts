@@ -186,3 +186,12 @@ describe('monthlySweepTotal', () => {
     expect(Math.abs(total - 0.07 * mati.gastoMensual)).toBeLessThanOrEqual(txns.length / 2)
   })
 })
+
+describe('ledger discipline (spec decision #24)', () => {
+  // Each profile's mock ledger must sum EXACTLY to its gastoMensual, so a judge
+  // can recompute every on-screen stat by hand from the visible ledger.
+  test.each(profiles)('$id ledger sums exactly to gastoMensual', (profile) => {
+    const sum = transactionsFor(profile.id).reduce((a, tx) => a + tx.amount, 0)
+    expect(sum).toBe(profile.gastoMensual)
+  })
+})
