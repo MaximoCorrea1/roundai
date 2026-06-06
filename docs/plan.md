@@ -13,7 +13,7 @@ knows the user → sustainable round-up margin → mock payment with the sweep l
 (`src/lib/roundup.ts`) owns every number on screen and in the prompt; a Node API route proxies
 Claude with streaming and a DEMO_MODE fallback. Spec: `docs/superpowers/specs/2026-06-06-roundai-mvp-design.md`.
 
-**Tech stack:** Next.js 15 (App Router) · TypeScript · Tailwind v4 · `@anthropic-ai/sdk`
+**Tech stack:** Next.js 16 (App Router) · TypeScript · Tailwind v4 · `@anthropic-ai/sdk`
 (`claude-sonnet-4-6`) · Vitest · pnpm · Vercel.
 
 **Phase map** (kickoff phases reordered per spec decision: pure module before live wiring):
@@ -79,7 +79,7 @@ DEMO_MODE=
 ```
 
 - [ ] **Verify:** `pnpm dev` serves the placeholder at `localhost:3000`; `pnpm build` passes
-- [ ] **Commit:** `feat: scaffold Next.js 15 + TS + Tailwind v4`
+- [ ] **Commit:** `feat: scaffold Next.js 16 + TS + Tailwind v4`
 
 ### Task 0.2: API stubs
 

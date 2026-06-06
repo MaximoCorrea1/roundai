@@ -40,7 +40,7 @@ frame, on-brand, chat powered by the real Claude API behind a secure server-side
 | 15 | Thinking/params | No `thinking`, no `temperature`/`top_p` (defaults only) | Fast first token; legacy params 400 on newer models |
 | 16 | Language | All product copy es-AR voseo in `src/data/strings.ts`; one-file switch | Authentic to AR judges; centralized = cheap to change |
 | 17 | ARS format | `Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })`; tests normalize the NBSP after `$` | Verified locally: emits `$ 1.234.567` with non-breaking space |
-| 18 | Scaffold | Manual Next.js 15 + TS + Tailwind v4 scaffold (no create-next-app: it refuses non-empty dirs); pin `packageManager`, add `.nvmrc` | Repo already has docs/CLAUDE.md; hand-rolled scaffold is ~6 small files |
+| 18 | Scaffold | Manual Next.js 16 + TS + Tailwind v4 scaffold (no create-next-app: it refuses non-empty dirs); pin `packageManager`, add `.nvmrc` | Repo already has docs/CLAUDE.md; hand-rolled scaffold is ~6 small files |
 | 19 | Tests | Vitest, `src/lib` only | Standard, fast, zero-config with TS |
 | 20 | Animations | CSS transforms/transitions first; Framer Motion only if a transition feels stiff | Judges see polish, not dependencies |
 | 21 | Wallet brand | Fictional host wallet "**Nimbo**" — deliberately neutral neobank look | Must read as "any wallet" to sell the embedded-B2B thesis without cloning a real brand |

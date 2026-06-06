@@ -3,4 +3,4 @@ export const MAX_TOKENS = 1000
 export const MAX_HISTORY = 24
 export const MAX_TOTAL_CHARS = 16_000
 export const TNA_SIMULADA = 0.35 // placeholder illustrative annual rate, always labeled "simulado"
-export const SENTINEL = '​' // impossible in real model output; client switches to fallback on sight
+export const SENTINEL = '\u0000' // NUL — impossible in real model output; client switches to fallback on sight
