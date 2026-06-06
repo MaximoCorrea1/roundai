@@ -17,9 +17,10 @@ import {
   formatARS,
   formatPct,
 } from './roundup'
+import { DEMO_PAYMENT } from '../data/transactions'
 import { strings } from '../data/strings'
 
-const CAFE = 4_350 // the demo café (DEMO_PAYMENT.amount) — concrete sweep example
+const CAFE = DEMO_PAYMENT.amount // single source: the scripted demo payment (spec #23)
 const MAX_REASONABLE_MONTHS = 24 // beyond this, switch to the honest "alternatives" line
 
 /** Does this profile support a sustainable proposal at all? (margin > 0) */

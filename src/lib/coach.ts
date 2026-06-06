@@ -9,6 +9,7 @@
 // Fuente de verdad: este archivo. docs/coach-system-prompt.md es el espejo
 // humano — si cambia uno, cambian los dos (Task 5.1).
 
+import { DEMO_PAYMENT } from '@/data/transactions'
 import type { UserProfile } from '@/lib/roundup'
 import {
   savingsCapacity,
@@ -118,7 +119,7 @@ export function buildSystemPrompt(
   const capacity = savingsCapacity(profile)
   const band = liquidityBand(profile)
   const contribution = monthlyContribution(profile, marginFraction)
-  const ejemploPago = 4350
+  const ejemploPago = DEMO_PAYMENT.amount
   const ejemploSweep = sweepForPayment(ejemploPago, marginFraction)
 
   const datos = `DATOS AUTORITATIVOS (pre-calculados por el sistema — citalos EXACTAMENTE,
