@@ -5,6 +5,7 @@ import {
   computeOptimalMargin,
   isSustainable,
   monthlyContribution,
+  monthsToGoal,
   RISK_TO_MARGIN,
   clampMargin,
   savingsCapacity,
@@ -87,5 +88,24 @@ describe('isSustainable', () => {
   })
   test('margin 0 is never sustainable', () => {
     expect(isSustainable(mati, 0)).toBe(false)
+  })
+})
+
+describe('monthsToGoal', () => {
+  test('zero contribution returns unreachable — never Infinity/NaN', () => {
+    expect(monthsToGoal(lu, 0, 2_000_000)).toEqual({ reachable: false, months: null })
+  })
+  test('goalAmount ≤ 0 throws ValidationError', () => {
+    expect(() => monthsToGoal(mati, 0.07, 0)).toThrow(ValidationError)
+  })
+  test('months are ceiled, never under-promised', () => {
+    // mati @ 7% of 1.180.000 = 82.600/mes → 500.000 / 82.600 = 6.05 → 7 meses
+    expect(monthsToGoal(mati, 0.07, 500_000)).toEqual({ reachable: true, months: 7 })
+  })
+  test('honest branch: absurdly slow at a SUSTAINABLE margin', () => {
+    // lu's sustainable margin ≈ 0.02 → ~$17.500/mes; $2.000.000 toma ~115 meses
+    const r = monthsToGoal(lu, computeOptimalMargin(lu), 2_000_000)
+    expect(r.reachable).toBe(true)
+    expect(r.months!).toBeGreaterThan(100)
   })
 })

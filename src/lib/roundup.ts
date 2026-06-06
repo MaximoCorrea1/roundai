@@ -66,3 +66,15 @@ export function monthlyContribution(profile: UserProfile, margin: number): numbe
 export function isSustainable(profile: UserProfile, margin: number): boolean {
   return margin > 0 && monthlyContribution(profile, margin) <= savingsCapacity(profile)
 }
+
+/** Months to reach a goal at a margin (Math.ceil, returns excluded); contribution ≤ 0 → unreachable. */
+export function monthsToGoal(
+  profile: UserProfile,
+  margin: number,
+  goalAmount: number,
+): { reachable: boolean; months: number | null } {
+  if (goalAmount <= 0) throw new ValidationError(`goalAmount must be positive: ${goalAmount}`)
+  const contribution = monthlyContribution(profile, margin)
+  if (contribution <= 0) return { reachable: false, months: null }
+  return { reachable: true, months: Math.ceil(goalAmount / contribution) }
+}
