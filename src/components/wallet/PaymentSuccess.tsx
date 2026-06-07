@@ -44,8 +44,10 @@ export function PaymentSuccess({
     <div className="roundai-ok absolute inset-0 flex flex-col bg-cream">
       <style>{SUCCESS_CSS}</style>
 
-      {/* the check + headline — the delight beat */}
-      <div className="flex shrink-0 flex-col items-center px-6 pt-[120px] text-center">
+      {/* the check + headline — the delight beat. pt = the shared safe-area inset
+          (clears the 54px StatusBar) plus generous breathing room so the check
+          sits well below the clock row. */}
+      <div className="flex shrink-0 flex-col items-center px-6 text-center" style={{ paddingTop: 'calc(var(--safe-top) + 64px)' }}>
         <span className="roundai-check grid h-[88px] w-[88px] place-items-center rounded-full bg-roundai-green text-lime shadow-[0_18px_44px_-18px_rgba(7,42,32,0.7)]">
           <svg width="42" height="42" viewBox="0 0 32 32" fill="none" aria-hidden="true">
             <path
@@ -102,11 +104,10 @@ export function PaymentSuccess({
               )}
             </div>
 
-            {/* the moment line + the quiet counterfactual — reinforce the payoff */}
-            <p className="roundai-sweep-caption mt-5 text-center text-[15px] font-medium text-lime-deep">
-              {p.sweepLanded}
-            </p>
-            <p className="roundai-sweep-caption mt-1.5 text-center text-[13px] text-roundai-green/45">
+            {/* the quiet counterfactual — the before/after sell, in ONE line.
+                (The "Tu meta acaba de crecer" whisper was dropped: the big lime
+                +sweep already says it — no redundant ink.) */}
+            <p className="roundai-sweep-caption mt-5 text-center text-[13.5px] text-roundai-green/50">
               {p.withoutRoundai}
             </p>
           </div>

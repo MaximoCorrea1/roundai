@@ -42,9 +42,14 @@ export function WalletHome({
 
   return (
     <div className="flex h-full w-full flex-col bg-nimbo-bg">
-      {/* scrolling region: everything above the nav. pt clears status bar +
-          dynamic island; the ledger inside takes the remaining height. */}
-      <div className="flex min-h-0 flex-1 flex-col gap-3.5 px-4 pb-3 pt-[62px]">
+      {/* scrolling region: everything above the nav. pt = the shared safe-area
+          inset (clears the 54px StatusBar overlay) + a small gap so the avatar/
+          saludo sits clear of the clock; the ledger inside takes the remaining
+          height. */}
+      <div
+        className="flex min-h-0 flex-1 flex-col gap-3.5 px-4 pb-3"
+        style={{ paddingTop: 'calc(var(--safe-top) + 8px)' }}
+      >
         {/* header */}
         <header className="flex shrink-0 items-center justify-between">
           <div className="flex items-center gap-3">

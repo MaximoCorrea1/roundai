@@ -58,6 +58,12 @@
   --phone-h: 852px;
   --phone-bezel: 12px; /* frame padding around the screen */
   --phone-margin: 24px;
+  /* Shared safe-area inset (iter 4): the StatusBar overlay (9:41 / radios) is
+     54px tall and rendered by PhoneFrame OVER the app content. Every full-screen
+     surface must clear it. One token so the clock row never collides with a
+     screen header again — consumed by PaymentSheet/PaymentSuccess/WalletHome via
+     `pt-[var(--safe-top)]` (+ each screen's own breathing room on top). */
+  --safe-top: 54px;
   /* scale so BOTH dimensions of the FULL frame (screen + bezel) fit
      (height is the binding constraint at 720p) */
   --phone-scale: min(
@@ -74,11 +80,12 @@ body {
   height: 100%;
 }
 
-/* Global type scale up (iter 3): 16px → 17.5px base so EVERY rem-based size
-   scales ~9% larger — judged on a projector, bigger reads as clearer. Arbitrary
-   px sizes in components were swept up separately to match this intent. */
+/* Global type scale up (iter 4): 17.5px → 18px base so EVERY rem-based size
+   scales a touch larger — judged on a projector, bigger reads as clearer.
+   Arbitrary px sizes in components are intentionally pinned (they don't ride the
+   rem base), so this only nudges Tailwind's rem-based utilities. */
 html {
-  font-size: 17.5px;
+  font-size: 18px;
 }
 
 body {

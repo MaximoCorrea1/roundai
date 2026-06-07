@@ -88,7 +88,9 @@ export function PaymentSheet({
       <style>{PAY_CSS}</style>
 
       {/* ── top bar: back control + header title ──────────────────────────── */}
-      <div className="flex shrink-0 items-center gap-3 px-5 pt-[58px] pb-2">
+      {/* pt = the shared safe-area inset (clears the 54px StatusBar overlay) + a
+          12px gap so the back/title sits visibly BELOW the clock row. */}
+      <div className="flex shrink-0 items-center gap-3 px-5 pb-2" style={{ paddingTop: 'calc(var(--safe-top) + 12px)' }}>
         <button
           type="button"
           aria-label={strings.a11y.closePayment}
@@ -124,28 +126,22 @@ export function PaymentSheet({
         </div>
 
         {/* the amount HERO — display font, huge, tabular. The single biggest
-            figure on screen. */}
-        <div className="roundai-pay-stagger mt-9 flex flex-col items-center text-center" style={{ ['--d' as string]: '120ms' }}>
+            figure on screen. (The merchant-figure whisper was dropped: the split
+            card below already states "al comercio" — no redundant ink.) */}
+        <div className="roundai-pay-stagger mt-10 flex flex-col items-center text-center" style={{ ['--d' as string]: '120ms' }}>
           <span className="text-[13px] font-medium uppercase tracking-[0.14em] text-roundai-green/45">
             {p.totalLabel}
           </span>
           <span className="tnum mt-2 font-display text-[56px] font-semibold leading-none tracking-tight text-roundai-green">
             {formatARS(total)}
           </span>
-          {/* when a sweep rides along, the total ≠ the merchant amount; whisper
-              the merchant figure so the hero stays honest. */}
-          {sweep > 0 && (
-            <span className="tnum mt-2 text-[14px] text-roundai-green/50">
-              {formatARS(toMerchant)} {p.toMerchant}
-            </span>
-          )}
         </div>
 
         {/* ── the roundai card — only when roundai is activated. Pre-activation
             there is nothing to toggle, so we render nothing (the plain "before"
             pay screen). ──────────────────────────────────────────────────── */}
         {active && (
-          <div className="roundai-pay-stagger mt-9 rounded-[var(--radius-lg)] bg-roundai-green px-5 pt-5 pb-5 text-cream shadow-[0_18px_44px_-22px_rgba(7,42,32,0.8)]" style={{ ['--d' as string]: '180ms' }}>
+          <div className="roundai-pay-stagger mt-10 rounded-[var(--radius-lg)] bg-roundai-green px-5 pt-5 pb-5 text-cream shadow-[0_18px_44px_-22px_rgba(7,42,32,0.8)]" style={{ ['--d' as string]: '180ms' }}>
             {/* toggle row — label + iOS-style switch */}
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2 text-[16px] font-semibold">
@@ -157,7 +153,11 @@ export function PaymentSheet({
               <RoundupSwitch on={on} onToggle={toggle} label={p.roundupToggle} />
             </div>
 
-            {/* the split made VISUAL — grows in when ON, collapses when OFF. */}
+            {/* the split made VISUAL — grows in when ON, collapses when OFF.
+                De-bloat (iter 4): the two boxed sub-cards are gone — the split is
+                now the flow bar + two FLAT labeled rows, whitespace doing the
+                separation. The margin folds into the "a tu meta" row; one quiet
+                supporting line names the destination. Less ink, same signal. */}
             <div className={'roundai-split-wrap' + (on ? ' is-open' : '')} aria-hidden={!on}>
               <div className="roundai-split-inner">
                 {/* the flow bar: the amount splitting into comercio + the lime
@@ -173,41 +173,42 @@ export function PaymentSheet({
                   />
                 </div>
 
-                {/* the two legs of the split, labeled + figured */}
-                <div className="mt-4 flex items-stretch gap-3">
-                  <div className="flex-1 rounded-[14px] bg-cream/[0.08] px-3.5 py-3">
-                    <p className="text-[13px] text-cream/60">{p.toMerchant}</p>
-                    <p className="tnum mt-1 text-[18px] font-semibold text-cream">
-                      {formatARS(toMerchant)}
-                    </p>
-                  </div>
-                  <div className="flex-1 rounded-[14px] bg-lime/15 px-3.5 py-3 ring-1 ring-lime/35">
-                    <p className="flex items-center gap-1 text-[13px] text-lime">
+                {/* al comercio — flat row */}
+                <div className="mt-5 flex items-baseline justify-between">
+                  <span className="text-[14px] text-cream/65">{p.toMerchant}</span>
+                  <span className="tnum text-[17px] font-semibold text-cream">
+                    {formatARS(toMerchant)}
+                  </span>
+                </div>
+
+                <div className="my-3.5 h-px bg-cream/12" />
+
+                {/* a tu meta — the lime line, the one that grew. Margin chip folds
+                    in here so there's no separate chip row. */}
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="flex items-baseline gap-2">
+                    <span className="flex items-center gap-1 text-[14px] font-semibold text-lime">
                       <span aria-hidden="true">✦</span>
                       {p.toGoal}
-                    </p>
-                    <p className="tnum mt-1 text-[18px] font-semibold text-lime">
-                      +{formatARS(sweep)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* the round-up rate chip — what fraction this is */}
-                <div className="mt-3.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13.5px]">
-                  <span className="rounded-full bg-lime px-2.5 py-1 text-[12px] font-semibold leading-none text-roundai-green">
-                    {interpolate(p.sweepBadgeWithMargin, { margen: formatPct(marginFraction) })}
-                  </span>
-                  {/* a dónde va — names the FCI the sweep funds (sessionRisk) */}
-                  {sessionRisk && (
-                    <span className="text-cream/60">
-                      {interpolate(p.destination, { perfil: sessionRisk })}
                     </span>
-                  )}
+                    <span className="rounded-full bg-lime px-2 py-0.5 text-[11px] font-semibold leading-none text-roundai-green">
+                      {formatPct(marginFraction)}
+                    </span>
+                  </span>
+                  <span className="tnum text-[22px] font-semibold text-lime">
+                    +{formatARS(sweep)}
+                  </span>
                 </div>
 
-                {/* micro-projection — what this single sweep could be worth at 12m */}
-                <p className="mt-2.5 text-[13.5px] font-medium text-lime">
-                  {interpolate(p.microProjection, { monto: formatARS(projected) })}
+                {/* one quiet supporting line — names the FCI the sweep funds and
+                    the 12-month value, the single highest-signal projection. */}
+                <p className="mt-3 text-[13px] text-cream/55">
+                  {sessionRisk && (
+                    <>{interpolate(p.destination, { perfil: sessionRisk })} · </>
+                  )}
+                  <span className="text-lime/85">
+                    {interpolate(p.microProjection, { monto: formatARS(projected) })}
+                  </span>
                 </p>
               </div>
             </div>
