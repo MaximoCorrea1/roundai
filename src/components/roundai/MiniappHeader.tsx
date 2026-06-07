@@ -22,7 +22,7 @@ export function MiniappHeader({
   const m = strings.miniapp
 
   return (
-    <header className="relative shrink-0 bg-roundai-green pt-[52px]">
+    <header className="relative shrink-0 bg-roundai-green pt-[calc(var(--safe-top)+8px)]">
       {/* atmosphere: a faint lime glow upper-right so the green field has depth */}
       <div
         className="pointer-events-none absolute inset-0"
