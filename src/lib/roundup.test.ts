@@ -11,6 +11,7 @@ import {
   monthlySweepTotal,
   monthsToGoal,
   monthsAtRate,
+  monthsWithReturns,
   planGoal,
   simulateReturns,
   sweepForPayment,
@@ -133,6 +134,51 @@ describe('monthsAtRate', () => {
   test('rate ≤ 0 → unreachable, never Infinity/NaN', () => {
     expect(monthsAtRate(1000, 0)).toEqual({ reachable: false, months: null })
     expect(monthsAtRate(1000, -5)).toEqual({ reachable: false, months: null })
+  })
+})
+
+describe('monthsWithReturns', () => {
+  // Goal timeline that ALSO accounts for expected investment returns (spec
+  // iteration-4): smallest n ≥ 0 where the end-of-month annuity FV reaches the
+  // goal. monthly × (((1+tna/12)^n − 1)/(tna/12)) ≥ goalAmount. tna 0 → ceil.
+  // All numbers HAND-VERIFIED against the annuity FV formula.
+  test('mati @ 82.600 / 500.000 / 35% → 6 (returns shave a month off 7)', () => {
+    // n=6 FV ≈ $533.2k ≥ 500k; n=5 ≈ $437.8k < 500k. Without returns: ceil(500000/82600)=7.
+    expect(monthsWithReturns(82_600, 500_000, 0.35)).toBe(6)
+    expect(monthsToGoal(mati, 0.07, 500_000).months).toBe(7)
+  })
+  test('41.667 / 500.000 / 35% → 11 (vs 12 without returns)', () => {
+    expect(monthsWithReturns(41_667, 500_000, 0.35)).toBe(11)
+    expect(Math.ceil(500_000 / 41_667)).toBe(12)
+  })
+  test('41.667 / 500.000 / 15% (pesimista) → 12', () => {
+    expect(monthsWithReturns(41_667, 500_000, 0.15)).toBe(12)
+  })
+  test('41.667 / 500.000 / 55% (optimista) → 10', () => {
+    expect(monthsWithReturns(41_667, 500_000, 0.55)).toBe(10)
+  })
+  test('tna 0 → ceil parity with the no-returns projection (monthsAtRate)', () => {
+    expect(monthsWithReturns(41_667, 500_000, 0)).toBe(monthsAtRate(500_000, 41_667).months)
+    expect(monthsWithReturns(82_600, 500_000, 0)).toBe(monthsAtRate(500_000, 82_600).months)
+  })
+  test('goalAmount ≤ 0 → 0 (already there)', () => {
+    expect(monthsWithReturns(82_600, 0, 0.35)).toBe(0)
+    expect(monthsWithReturns(82_600, -100, 0.35)).toBe(0)
+  })
+  test('monthly ≤ 0 → null (never Infinity/NaN)', () => {
+    expect(monthsWithReturns(0, 500_000, 0.35)).toBe(null)
+    expect(monthsWithReturns(-5, 500_000, 0.35)).toBe(null)
+  })
+  test('tiny monthly vs huge goal exceeds the 600-month cap → null', () => {
+    // $1/mes toward $10M at 15% TNA stays under-water past 600 months → null.
+    // (At 35% it would compound to 438 months — under the cap; pesimista is the
+    // honest stress case for the cap.)
+    expect(monthsWithReturns(1, 10_000_000, 0.15)).toBe(null)
+    // No growth at all: definitively a fantasy timeline → null.
+    expect(monthsWithReturns(1, 10_000_000, 0)).toBe(null)
+  })
+  test('negative goalAmount is treated as ≤ 0 → 0, but negative tna → ValidationError', () => {
+    expect(() => monthsWithReturns(82_600, 500_000, -0.1)).toThrow(ValidationError)
   })
 })
 

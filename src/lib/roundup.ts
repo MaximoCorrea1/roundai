@@ -100,6 +100,47 @@ export function monthsAtRate(
   return { reachable: true, months: Math.ceil(remainingAmount / monthlyRate) }
 }
 
+/** Hard cap on projected months — no fantasy half-century timelines (iteration-4). */
+const MAX_PROJECTION_MONTHS = 600
+
+/**
+ * Months to reach a goal WITH expected investment returns (iteration-4): the
+ * smallest integer n ≥ 0 such that the end-of-month annuity future value
+ * `monthly × (((1+r)^n − 1)/r)` (r = tna/12) reaches `goalAmount`. This is the
+ * returns-aware counterpart to monthsAtRate — returns shrink (or, at low TNAs,
+ * leave) the timeline relative to the plain-sweep projection.
+ *
+ * - tna 0 collapses to the plain ceil (no growth): `ceil(goalAmount / monthly)`.
+ * - goalAmount ≤ 0 → 0 (already there).
+ * - monthly ≤ 0 → null (unreachable; never Infinity/NaN).
+ * - Hard cap: if n would exceed 600 it returns null (no fantasy projections).
+ *
+ * @throws ValidationError if monthly, goalAmount, or tna is non-finite or
+ *   negative (a negative rate/amount is nonsense for a savings projection).
+ */
+export function monthsWithReturns(monthly: number, goalAmount: number, tna: number): number | null {
+  if (!Number.isFinite(monthly) || !Number.isFinite(goalAmount) || !Number.isFinite(tna))
+    throw new ValidationError(`non-finite input: monthly=${monthly}, goal=${goalAmount}, tna=${tna}`)
+  if (tna < 0) throw new ValidationError(`tna must be ≥ 0: ${tna}`)
+  if (goalAmount <= 0) return 0
+  if (monthly <= 0) return null
+  if (tna === 0) {
+    const n = Math.ceil(goalAmount / monthly)
+    return n > MAX_PROJECTION_MONTHS ? null : n
+  }
+  const r = tna / 12
+  // Smallest n with monthly × (((1+r)^n − 1)/r) ≥ goalAmount. Iterate the FV
+  // (no logs/rounding surprises) and bail at the cap.
+  let n = 0
+  let fv = 0
+  while (fv < goalAmount) {
+    n++
+    if (n > MAX_PROJECTION_MONTHS) return null
+    fv = monthly * (((1 + r) ** n - 1) / r)
+  }
+  return n
+}
+
 /**
  * Plan a goal from its deadline (spec decision #25): the required monthly
  * amount is `amount / months`, and we classify it against two caps —
