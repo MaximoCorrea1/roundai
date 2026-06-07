@@ -22,13 +22,24 @@ import { strings } from '@/data/strings'
 export function PaceEta({
   monthlySweep,
   months,
+  etaMonths,
+  optimista,
+  pesimista,
   nudgeDays,
 }: {
   monthlySweep: number // base monthly sweep (ARS) — formatARS'd for the line
-  months: number // calculator-derived months to reach the remaining amount
+  months: number // flat-sweep months (no returns) — drives the honest pace SENTENCE
+  // returns-aware expected months — the ETA anchors on this (still "simulado").
+  // Defaults to `months` if scenarios are unavailable.
+  etaMonths: number
+  optimista: number | null // best-case months (✦ edge of the range subtext)
+  pesimista: number | null // worst-case months (other edge)
   nudgeDays: number | null // SURPRISE: days this session's payment shaved off, or null
 }) {
-  const etaLabel = etaMonth(months)
+  // The ETA date anchors on the EXPECTED (returns-aware) months — the case a user
+  // should plan around — while the pace sentence keeps the honest flat months.
+  const etaLabel = etaMonth(etaMonths)
+  const hasRange = optimista != null && pesimista != null
 
   const line = strings.goal.paceV3
     .replace('{sweep}', formatARS(monthlySweep))
@@ -47,14 +58,24 @@ export function PaceEta({
         </span>
       </p>
 
-      {/* ETA anchor — the date you actually feel */}
-      <div className="mt-3 flex items-baseline gap-2 border-t border-cream/10 pt-3">
-        <span className="text-[11.5px] font-medium uppercase tracking-wide text-cream/55">
-          {strings.goal.etaPrefix}
-        </span>
-        <span className="font-display text-[22px] font-semibold leading-none text-lime">
-          {etaLabel}
-        </span>
+      {/* ETA anchor — the date you actually feel (expected, returns-aware) */}
+      <div className="mt-3 border-t border-cream/10 pt-3">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[11.5px] font-medium uppercase tracking-wide text-cream/55">
+            {strings.goal.etaPrefix}
+          </span>
+          <span className="font-display text-[22px] font-semibold leading-none text-lime">
+            {etaLabel}
+          </span>
+        </div>
+        {/* honest scenario range — a tiny ✦ optimista–pesimista marker, simulado */}
+        {hasRange && (
+          <p className="tnum mt-1.5 text-[11.5px] font-medium text-cream/55">
+            {strings.goal.etaRange
+              .replace('{optimista}', String(optimista))
+              .replace('{pesimista}', String(pesimista))}
+          </p>
+        )}
       </div>
 
       {/* SURPRISE: "tu café de hoy te acercó {x} días" — only right after a

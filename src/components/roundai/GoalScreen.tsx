@@ -8,6 +8,7 @@ import {
   monthlySweepTotal,
   simulateReturns,
   monthsAtRate,
+  scenarioMonths,
   formatARS,
 } from '@/lib/roundup'
 import { profiles } from '@/data/profiles'
@@ -85,6 +86,14 @@ export function GoalScreen({
   const remaining = hasTarget ? Math.max(0, goalAmount - total) : 0
   const paceRate = isSimulatedActive ? 0 : baseSweep
   const pace = hasTarget ? monthsAtRate(remaining, paceRate) : null
+  // SCENARIOS (iteration-4): the returns-aware timeline range for the remaining
+  // amount at the current sweep rate. The ETA anchors on `esperado` (the expected
+  // case, still honest-labeled "simulado"); the optimista–pesimista range is a
+  // tiny subtext below. Null entries (rate ≤ 0 / cap) fall back to the flat pace.
+  const scenarios =
+    hasTarget && pace?.reachable && pace.months != null && pace.months > 0
+      ? scenarioMonths(paceRate, remaining)
+      : null
 
   // ── SURPRISE: days this session's live sweep shaved off the goal ──
   // At the goal's REQUIRED daily pace (amount / (months × 30)), how many days does
@@ -131,9 +140,19 @@ export function GoalScreen({
         <NoTargetHero accumulated={ringValue} celebrate={celebrate} />
       )}
 
-      {/* PACE, EXPLAINED + ETA anchor + the surprise nudge (v3 #2, #4) */}
+      {/* PACE, EXPLAINED + ETA anchor + scenario range + the surprise nudge
+          (v3 #2, #4 · iteration-4 scenarios). The pace SENTENCE keeps the honest
+          flat-sweep months; the ETA anchors on the expected (returns-aware) case
+          with the optimista–pesimista range as subtext. */}
       {hasTarget && pace?.reachable && pace.months != null && pace.months > 0 && (
-        <PaceEta monthlySweep={baseSweep} months={pace.months} nudgeDays={nudgeDays} />
+        <PaceEta
+          monthlySweep={baseSweep}
+          months={pace.months}
+          etaMonths={scenarios?.esperado ?? pace.months}
+          optimista={scenarios?.optimista ?? null}
+          pesimista={scenarios?.pesimista ?? null}
+          nudgeDays={nudgeDays}
+        />
       )}
 
       {/* TU CARTERA: position + composition by profile (v3 #3) — absorbs the old
