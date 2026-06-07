@@ -14,6 +14,7 @@ import {
   monthlyContribution,
   savingsCapacity,
   clampMargin,
+  simulateReturns,
   formatARS,
   formatPct,
 } from './roundup'
@@ -67,14 +68,18 @@ export function demoReplyFor(
     return `Tranqui, no hay letra chica.\nLo pausás o lo bajás cuando quieras, sin penalidad ni costo.\nLo que ya juntaste sigue siendo *tuyo*: lo retirás o lo dejás rindiendo.\nLa idea es que pruebes sin miedo.`
   }
 
-  // 2. margin-why — sustainability vs capacity, cite the committed margin.
+  // 2. margin-why — define WHAT the % is (per-purchase round-up), tie it to
+  //    average spending, then sustainability + simulated returns (not a piggy
+  //    bank — the money compounds; iteration-5 clarity fix).
   if (/por\s*qué|porque|\d\s*%|margen/.test(text)) {
-    return `Elegí *${pct}* porque entra cómodo en los ~${cap} que te sobran a fin de mes.\nSon ~${aporte} por mes: no te aprietan.\nSi subiéramos más, dejaría de ser sostenible y lo terminarías pausando.`
+    const sim = simulateReturns(contribution, 12)
+    return `*${pct}* significa: cada compra que hacés se redondea un ${pct} para arriba, y ese extra se invierte solo.\nCon tus gastos promedio (~${formatARS(profile.gastoMensual)}/mes) eso junta ~*${aporte}* por mes — y entra cómodo en los ~${cap} que te sobran.\nY no es una alcancía: en 12 meses aportarías ~${formatARS(sim.aportado)}, que con retorno esperado serían ~*${formatARS(sim.total)}* (+${formatARS(sim.rendimiento)} · simulado).`
   }
 
   // 3. fci-explainer — qué es un FCI en criollo, riesgo por niveles, sin instrumentos.
   if (/fci|fondo/.test(text)) {
-    return `Un FCI es una canasta: juntás tu plata con la de otros y un equipo la administra por vos.\nNo tenés que elegir nada a mano.\nHay de menos a más riesgo — vos elegís el nivel con el que dormís tranquilo.`
+    const sim = simulateReturns(contribution, 12)
+    return `Un FCI es una canasta: juntás tu plata con la de otros y un equipo la administra por vos.\nNo tenés que elegir nada a mano — y tu plata rinde, no queda quieta.\nCon tu ritmo (~${aporte}/mes), en 12 meses serían ~*${formatARS(sim.total)}* (+${formatARS(sim.rendimiento)} de retorno esperado · simulado).\nHay de menos a más riesgo — elegís el nivel con el que dormís tranquilo.`
   }
 
   // 4. tight-month — el margen se reajusta solo; podés pausarlo cuando quieras.

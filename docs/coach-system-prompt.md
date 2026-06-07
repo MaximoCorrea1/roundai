@@ -84,8 +84,11 @@ nunca recalcules ni redondees; si un número no está acá, decí que no lo ten�
 - Gasto mensual: {formatARS(gastoMensual)} · Margen acordado: {formatPct(marginFraction)}
 - Aporte mensual estimado: {formatARS(monthlyContribution)}
 - Plazo elegido: {goal.months ? `${goal.months} meses` : 'sin plazo fijo'}
-- Mecánica por pago: cada pago barre {formatPct(marginFraction)} a tu meta
-  (ej.: un pago de {formatARS(4350)} suma {formatARS(sweepForPayment(4350, marginFraction))})
+- Mecánica por pago (SIEMPRE explicala así si te preguntan qué es el margen):
+  cada compra se redondea un {formatPct(marginFraction)} para arriba y ese extra se
+  invierte solo (ej.: un pago de {formatARS(DEMO_PAYMENT.amount)} suma {formatARS(sweepForPayment(...))});
+  con los gastos promedio del usuario eso junta ~{formatARS(monthlyContribution)}/mes
+- No es una alcancía — la plata rinde: en 12 meses aportaría ~{formatARS(simulateReturns(contribution, 12).aportado)}, que con retorno esperado serían ~{formatARS(.total)} (+{formatARS(.rendimiento)} · SIMULADO, no garantizado)
 - Meta: {goal line}
 ```
 
@@ -121,8 +124,11 @@ nunca recalcules ni redondees; si un número no está acá, decí que no lo ten�
 - Gasto mensual: $ 1.180.000 · Margen acordado: 3,5%
 - Aporte mensual estimado: $ 41.667
 - Plazo elegido: 12 meses
-- Mecánica por pago: cada pago barre 3,5% a tu meta
-  (ej.: un pago de $ 4.350 suma $ 154)
+- Mecánica por pago (SIEMPRE explicala así si te preguntan qué es el margen):
+  cada compra se redondea un 3,5% para arriba y ese extra se
+  invierte solo (ej.: un pago de $ 4.350 suma $ 154);
+  con los gastos promedio del usuario eso junta ~$ 41.667/mes
+- No es una alcancía — la plata rinde: en 12 meses aportaría ~$ 500.004, que con retorno esperado serían ~$ 588.548 (+$ 88.544 · SIMULADO, no garantizado)
 - Meta: $ 500.000 → 12 meses (sin contar rendimientos); con retorno esperado ~11 meses (rango 10–12 según mercado, simulado, no garantizado)
 ```
 

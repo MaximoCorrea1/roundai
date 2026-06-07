@@ -19,6 +19,7 @@ import {
   scenarioMonths,
   liquidityBand,
   sweepForPayment,
+  simulateReturns,
   formatARS,
   formatPct,
 } from '@/lib/roundup'
@@ -152,8 +153,15 @@ nunca recalcules ni redondees; si un número no está acá, decí que no lo ten�
 - Gasto mensual: ${formatARS(profile.gastoMensual)} · Margen acordado: ${formatPct(marginFraction)}
 - Aporte mensual estimado: ${formatARS(contribution)}
 - Plazo elegido: ${plazo}
-- Mecánica por pago: cada pago barre ${formatPct(marginFraction)} a tu meta
-  (ej.: un pago de ${formatARS(ejemploPago)} suma ${formatARS(ejemploSweep)})
+- Mecánica por pago (SIEMPRE explicala así si te preguntan qué es el margen):
+  cada compra se redondea un ${formatPct(marginFraction)} para arriba y ese extra se
+  invierte solo (ej.: un pago de ${formatARS(ejemploPago)} suma ${formatARS(ejemploSweep)});
+  con los gastos promedio del usuario eso junta ~${formatARS(contribution)}/mes
+- No es una alcancía — la plata rinde: en 12 meses aportaría ~${formatARS(
+    simulateReturns(contribution, 12).aportado,
+  )}, que con retorno esperado serían ~${formatARS(
+    simulateReturns(contribution, 12).total,
+  )} (+${formatARS(simulateReturns(contribution, 12).rendimiento)} · SIMULADO, no garantizado)
 - Meta: ${renderGoal(profile, goal, marginFraction)}`
 
   return `${PERSONA}\n\n${datos}`
