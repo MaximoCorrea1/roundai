@@ -1,56 +1,56 @@
 # Demo script
 
-> **Final run-of-show (iteration 2).** Every figure below was verified rendered on screen
-> (final review, 2026-06-06) on the **locked path**: profile **mati**, quiz **m/m/m**, meta
-> **$ 500.000**, plazo **12 meses**, margin **tweaked to 7% and confirmed in the tweaker**.
-> ⚠️ The numbers are path-dependent: if you accept the proposal at 3,5% instead, the whole
-> number set changes (sweep +$ 152/154, not +$ 305). Stick to the path or re-derive.
-> Total budget: **3 minutes.** Live chat unlocks only after "Dale, activalo".
+> **Final run-of-show (iteration 3).** Every figure and quote below was verified rendered
+> on screen (integration audit, 2026-06-07) on the **locked path**: profile **mati**, quiz
+> **m/m/m**, meta **$ 500.000** named **"La compu"**, plazo **12 meses**, margin **tweaked
+> to 7% and confirmed in the tweaker**. ⚠️ Numbers are path-dependent: accept at the
+> proposed 3,5% instead and the whole set changes (+$ 154, not +$ 305). Total: **3 minutes.**
+> The flow self-narrates (step labels, explanative coach, suggested-question chips) — no
+> external pointers needed.
 
 ## Run-of-show (beats in order)
 
 | # | Beat | What to do | Say | Budget |
 |---|---|---|---|---|
-| 0 | **Open** | Deployed URL, pre-loaded tab, hard-refreshed. Subtle cues (lime dots) guide the way; `?guia=0` disables them. | "Esto es una billetera cualquiera." | 0:08 |
-| 1 | **Wallet + B2B thesis** | Nimbo wallet home; point at the green roundai tile (cue pulsing on it). | "La billetera es genérica a propósito. roundai es la capa que se enchufa adentro — el cliente es la billetera." | 0:15 |
-| 2 | **Tap the tile** | Miniapp slides in; coach greets by name with **$ 108.333** (real ledger math). | "Ya te conoce — eso sale de SUS movimientos." | 0:10 |
-| 3 | **Quiz inversor** | Answer the 3 chips (middle option ×3) → "**Tu perfil: Moderado ✦**". | "Por regulación el perfil inversor lo declara el usuario — no lo infiere la IA. Compliance desde el diseño." | 0:18 |
-| 4 | **Meta + plazo** | "Quiero llegar a esta meta" → **$ 500.000** → plazo **12 meses**. | "Meta concreta, plazo concreto." | 0:15 |
-| 5 | **Propuesta con data** | Tendencias: "gastos **+5,9%**, liquidez **+20,3%**". Proposal: "**$ 41.667/mes → margen 3,5%**. Entra cómodo: te sobran ~$ 108.333." | "Lee mis tendencias reales y me propone lo MÍNIMO que necesito. Honesto." | 0:18 |
-| 6 | **El margen se toca** ⭐ | Tap the lime **3,5%** chip → tweaker. Step up to **7%**: "aporte **$ 82.600/mes** · llegás en **7 meses** · un café suma **$ 305**". Confirm AT 7%. Accept ("Dale, activalo"). | "Y acá está el producto: el margen no es una caja negra. Subo al tope de mi perfil… y llego en 7 meses en vez de 12. Yo decido, informado." | 0:25 |
-| 7 | **Coach en vivo (Claude real)** | Send ONE live prompt (pick by energy): ① `¿Por qué este margen?` ② `¿Qué es un FCI?` ④ `¿Me conviene comprar dólares?` ← the spicy one — watch it deflect. | "Claude en vivo, con los números inyectados como autoritativos — no inventa cifras. Y no recomienda activos: educa." | 0:30 |
-| 8 | **Pagar** | Back to wallet (cue on Pagar) → Café Martínez **$ 4.350**. Flip the round-up toggle OFF ("**sin redondeo, tu meta no avanza**") → ON → split `+$ 305 a tu meta ✦ roundai (7%)` · "va a tu **FCI moderado** · simulado" · "este barrido valdría **~$ 4.308** en 12 meses". Confirm. Balance → **$ 321.845**; badged txn tops the ledger. | "Pago un café. El redondeo es opt-in — lo apago, lo prendo. $ 305 al FCI. Sin roundai: cero." | 0:25 |
-| 9 | **Mi meta** | Cue on Mi meta → ring **$ 82.906** (mes simulado $ 82.601 + café $ 305) · "estás a **$ 417.094**" · "a este ritmo: **6 meses**" · "rendiría en 12 meses **~$ 175.529** ✦ simulado" · holdings $ 82.906 / $ 0 / $ 82.906 · racha 1 mes · **Viaje a Bariloche 12%** (simulada). *(Time permitting: tap Activar on Viaje — sweeps follow the active goal, no double-count.)* | "La meta se movió justo $ 305. Cada número se recalcula a mano desde el ledger. Y con varias metas, el redondeo sigue a la activa." | 0:26 |
-| 10 | **Cierre** | Closing line. | "Gastar todos los días se volvió invertir hacia algo concreto. AUM y retención para la billetera; un coach que la gente entiende." | 0:10 |
+| 0 | **Open** | Deployed URL, pre-loaded tab, hard-refreshed. | "Esto es una billetera cualquiera." | 0:08 |
+| 1 | **Wallet + B2B thesis** | Nimbo home; the breathing green roundai tile is the only brand break. | "La billetera es genérica a propósito. roundai es la capa que se enchufa adentro — el cliente es la billetera." | 0:13 |
+| 2 | **Tap the tile** | Coach: "Miré tus últimos 6 meses en Nimbo" → "Cada fin de mes te quedan **~$ 108.333** sin usar. Esa plata puede trabajar para vos." | "Ya conoce sus movimientos — ese número sale del ledger real." | 0:12 |
+| 3 | **Quiz inversor** | 3 chips (middle ×3) → "**Tu perfil: Moderado ✦**". | "Por regulación el perfil inversor lo declara el usuario — no lo infiere la IA." | 0:16 |
+| 4 | **Meta con nombre + plazo** | "Quiero llegar a esta meta" → **$ 500.000** → chip **"La compu"** → **12 meses**. Step labels guide each input. | "Meta concreta, con nombre, con fecha." | 0:18 |
+| 5 | **Propuesta que enseña** | Coach: gastos **+5,9%** / sobrante **+20,3%** → mecanismo: "un café de $ 4.350 → $ 154, sin que lo pienses" → plan: "**$ 41.667/mes, el 3,5%** de tu gasto". | "Tendencias reales, el mecanismo explicado, y el MÍNIMO que necesita. Honesto." | 0:18 |
+| 6 | **El margen se toca** ⭐ | Tap the lime **3,5%** chip → tweaker (opens at the exact 3,5%): step to **7%** → "aporte **$ 82.600/mes** · llegás en **7 meses** · café suma **$ 305**" → **Confirmar margen** → "✦ Dale, activalo". Activated: "cada pago redondea 7% a *La compu*. Probalo: volvé a la billetera y pagá el café." | "El margen no es caja negra: lo subo al tope de mi perfil y llego en 7 meses en vez de 12. Decido yo, informado. Y mirá — el coach me dice el próximo paso." | 0:25 |
+| 7 | **Coach en vivo (Claude real)** | Tap ONE suggested chip ("PROBÁ PREGUNTARME"): `¿Qué es un FCI?` — or type the spicy one: `¿Me conviene comprar dólares?` (watch it deflect). | "Claude en vivo con los números inyectados como autoritativos — no inventa cifras, no recomienda activos. Educa." | 0:28 |
+| 8 | **Pagar (pantalla completa)** | Wallet → **Pagar** → full-screen: Café Martínez, **TOTAL A DEBITAR $ 4.655**. Flip the toggle **OFF** (total drops to $ 4.350 — "sin redondeo, tu meta no avanza") → **ON** → split: `$ 4.350 al comercio · +$ 305 a tu meta ✦ roundai (7%)` · "va a tu FCI moderado · simulado" · "este barrido valdría ~$ 4.308 en 12 meses". Confirm → success split → balance **$ 321.845**, badged txn tops the ledger. | "El redondeo es opt-in: lo apago, el total baja; lo prendo, $ 305 van al FCI. Transparencia total." | 0:28 |
+| 9 | **Mi meta** | Goal page "**La compu**": lo tuyo **$ 82.906** · te falta **$ 417.094** · "con ~**$ 82.601**/mes en redondeos, llegás en ~**6 meses**" → **LLEGÁS EN {mes año}** (renders relative to demo day) · "tu café de hoy te acercó **1 día** ✦" · Tu cartera: total $ 82.906, "a 12 meses ~**$ 1.166.741** ✦ simulado", reparto Moderado **55/30/15** · Otras metas: Viaje a Bariloche (simulada). | "El café se volvió un día menos de espera, con fecha concreta. Y la cartera se arma según SU perfil. Cada número se recalcula a mano desde el ledger." | 0:24 |
+| 10 | **Cierre** | Closing line. | "Gastar todos los días se volvió invertir hacia algo con nombre y fecha. AUM y retención para la billetera; un coach que la gente entiende." | 0:10 |
 
-**Profile switching (judges or Q&A):** pills under the phone — `?perfil=lu` (Conservadora: $ 200.000/12m → **1,9%**, café **+$ 83**) / `?perfil=fede`. Full reload = clean session.
+**Profile switching (Q&A):** pills under the phone — `?perfil=lu` (Conservadora, capacity ~$ 17.500) / `?perfil=fede`. Full reload = clean session.
 
 ## Per-beat fallback actions
 
 | Beat | If it goes wrong | Action |
 |---|---|---|
 | 0 / wifi | Page won't load | Switch to the localhost backup tab (already running). |
-| 6 (tweaker) | Stepped past 7% by mistake | Step back — it caps at 9,2% (capacity) anyway; numbers stay consistent at ANY committed margin. But the script's figures assume 7%. |
-| 7 (live coach) | Stream frozen >6s | **It auto-switches to the canned reply — keep talking.** The canned answers cite the same 7% figures. |
+| 6 (tweaker) | Stepped past 7% | Step back — it caps at 9,2% (capacity). The script's figures assume confirming at exactly 7%. |
+| 7 (live coach) | Stream frozen >6s | **It auto-switches to the canned reply — keep talking.** Canned answers cite the same committed-margin figures. |
 | 7 (live coach) | Worst case | `DEMO_MODE=1` deploy is the deterministic fallback build. |
-| 8 (pay) | Numbers questioned | Recompute live on stage: 7% de $ 4.350 = $ 304,50 → redondeo $ 305. One calculator, zero drift. |
-| 9 (ring) | Ring didn't move | Hard-refresh and replay from beat 6 (state is in-session, ~40s). |
+| 8 (pay) | Numbers questioned | Recompute on stage: 7% de $ 4.350 = $ 304,50 → redondeo $ 305. One calculator, zero drift. |
+| 9 (goal) | Ring didn't move | Hard-refresh, replay from beat 6 (~40s — state is in-session). |
 
 ## Pre-demo checklist
 
 - [ ] Phone hotspot on (do not trust venue wifi).
-- [ ] Deployed `/api/health?ping=1` → `live: true` (key working) AND warms the function.
+- [ ] Deployed `/api/health?ping=1` → `live: true` AND warms the function.
 - [ ] **Do Not Disturb** on (laptop + phone).
 - [ ] Clean **fullscreen** browser profile; devtools closed.
 - [ ] One pre-loaded tab on the deployed URL; **hard refresh** right before presenting.
 - [ ] Localhost backup running in a second tab.
 - [ ] `DEMO_MODE=1` fallback deploy reachable.
-- [ ] Decide cues: default ON (judges self-navigate); `?guia=0` for a chrome-free run.
 - [ ] Layout spot-check on a **1280 × 720** window.
 - [ ] Two timed rehearsals on the deployed URL — one with wifi killed mid-beat-7 (the fallback must be invisible).
 
 ## Timing budget
 
-**3:00 total.** Beat 7 (live coach) is the elastic one — if Claude streams fast, bank the time
-for beat 9's multi-goal moment. Beats 6 and 8 are where the demo wins: the margin you can
-touch, and the payment that visibly funds the goal.
+**3:00 total.** Beat 7 (live coach) is the elastic one — if Claude streams fast, bank time for
+beats 8–9, where the demo wins: the toggle that makes the counterfactual visible, and the café
+that becomes "1 día menos" toward a dated goal.
