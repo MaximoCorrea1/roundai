@@ -6,7 +6,9 @@ roundai es una capa de inteligencia artificial que las billeteras digitales (pen
 
 Este repositorio es el prototipo de hackatón (categoría fintech): una aplicación web que dibuja un iPhone dentro del navegador. Tocás una billetera creíble, abrís la miniaplicación de roundai, el coach te guía, definís una meta con nombre y plazo, hacés un pago de prueba y ves el redondeo caer en esa meta — con el chat impulsado por la API real de Claude detrás de un intermediario seguro del lado del servidor. Todo lo demás está deliberadamente simulado.
 
-**Demo en vivo:** [**roundai.vercel.app**](https://roundai.vercel.app) — hoy corre en modo demo (`DEMO_MODE`, coach con respuestas pregrabadas, cero llamadas a la API); al cargar la clave `ANTHROPIC_API_KEY` en Vercel y quitar `DEMO_MODE`, el coach pasa a Claude en vivo sin tocar código.
+## 👉 Demo en vivo: [**roundai.vercel.app**](https://roundai.vercel.app)
+
+Abrila y listo — no hace falta configurar nada.
 
 ## Probalo (recorrido de 3 minutos)
 
@@ -27,13 +29,12 @@ El flujo se narra solo (etiquetas en cada paso, preguntas sugeridas), pero este 
 
 ```bash
 pnpm install
-cp .env.example .env.local      # agregá tu ANTHROPIC_API_KEY
-pnpm dev                        # http://localhost:3000
-pnpm test                       # las pruebas de la matemática de la plata (solo src/lib)
-pnpm build                      # compilación de producción
+DEMO_MODE=1 pnpm dev            # http://localhost:3000 — la demo completa, sin configurar nada
 ```
 
-¿No tenés clave de API a mano? `DEMO_MODE=1 pnpm dev` sirve una conversación pregrabada del coach por el mismo canal — la demo completa corre sin una sola llamada externa. Incluso en modo vivo, el chat cae automáticamente a las respuestas pregrabadas si la conexión se cuelga (más de 6 segundos) o falla, así la demo nunca se congela en el escenario.
+Eso es todo: el coach responde con la conversación pregrabada y cada número sale de la misma calculadora que en modo vivo. Otros comandos: `pnpm test` (las pruebas de la matemática de la plata) y `pnpm build` (compilación de producción).
+
+¿Querés el coach con Claude en vivo? Copiá `.env.example` a `.env.local`, completá `ANTHROPIC_API_KEY` y corré `pnpm dev` a secas. Incluso en vivo, el chat cae solo a las respuestas pregrabadas si la conexión falla — la demo nunca se congela.
 
 > Solo pnpm — `npm install` y `yarn` están bloqueados. Node 20 o superior (archivo `.nvmrc` incluido).
 
