@@ -22,3 +22,4 @@ coverage/
 
 # typescript incremental build artifact
 tsconfig.tsbuildinfo
+.vercel
