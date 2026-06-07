@@ -5,7 +5,7 @@
 // test first in roundup.test.ts (see docs/plan.md §Phase 3).
 
 import type { Transaction } from '../data/transactions'
-import { TNA_SIMULADA } from './config'
+import { TNA_ESCENARIOS, TNA_SIMULADA } from './config'
 
 export type RiskProfile = 'conservador' | 'moderado' | 'agresivo'
 
@@ -139,6 +139,25 @@ export function monthsWithReturns(monthly: number, goalAmount: number, tna: numb
     fv = monthly * (((1 + r) ** n - 1) / r)
   }
   return n
+}
+
+/**
+ * Goal timeline under each scenario TNA (iteration-4): maps TNA_ESCENARIOS
+ * (pesimista/esperado/optimista) through monthsWithReturns for one monthly
+ * sweep + goal. A higher TNA reaches the goal sooner, so the timelines satisfy
+ * `optimista ≤ esperado ≤ pesimista` whenever they are non-null. Each entry
+ * inherits monthsWithReturns' contract: 0 (goal ≤ 0), null (monthly ≤ 0 or the
+ * 600-month cap), else the smallest integer n. Always labeled "simulado" in UI.
+ */
+export function scenarioMonths(
+  monthly: number,
+  goalAmount: number,
+): { pesimista: number | null; esperado: number | null; optimista: number | null } {
+  return {
+    pesimista: monthsWithReturns(monthly, goalAmount, TNA_ESCENARIOS.pesimista),
+    esperado: monthsWithReturns(monthly, goalAmount, TNA_ESCENARIOS.esperado),
+    optimista: monthsWithReturns(monthly, goalAmount, TNA_ESCENARIOS.optimista),
+  }
 }
 
 /**

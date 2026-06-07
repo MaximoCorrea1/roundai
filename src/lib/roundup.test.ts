@@ -12,6 +12,7 @@ import {
   monthsToGoal,
   monthsAtRate,
   monthsWithReturns,
+  scenarioMonths,
   planGoal,
   simulateReturns,
   sweepForPayment,
@@ -179,6 +180,36 @@ describe('monthsWithReturns', () => {
   })
   test('negative goalAmount is treated as ≤ 0 → 0, but negative tna → ValidationError', () => {
     expect(() => monthsWithReturns(82_600, 500_000, -0.1)).toThrow(ValidationError)
+  })
+})
+
+describe('scenarioMonths', () => {
+  // Maps the three scenario TNAs (pesimista/esperado/optimista) through
+  // monthsWithReturns. Best case shrinks the timeline, worst case extends it.
+  test('41.667 / 500.000 → { pesimista: 12, esperado: 11, optimista: 10 }', () => {
+    expect(scenarioMonths(41_667, 500_000)).toEqual({
+      pesimista: 12,
+      esperado: 11,
+      optimista: 10,
+    })
+  })
+  test('ordering holds: optimista ≤ esperado ≤ pesimista (when non-null)', () => {
+    const s = scenarioMonths(41_667, 500_000)
+    expect(s.esperado).not.toBeNull()
+    expect(s.optimista).not.toBeNull()
+    expect(s.pesimista).not.toBeNull()
+    expect(s.optimista!).toBeLessThanOrEqual(s.esperado!)
+    expect(s.esperado!).toBeLessThanOrEqual(s.pesimista!)
+  })
+  test('monthly ≤ 0 → all scenarios null', () => {
+    expect(scenarioMonths(0, 500_000)).toEqual({
+      pesimista: null,
+      esperado: null,
+      optimista: null,
+    })
+  })
+  test('goalAmount ≤ 0 → all scenarios 0 (already there)', () => {
+    expect(scenarioMonths(41_667, 0)).toEqual({ pesimista: 0, esperado: 0, optimista: 0 })
   })
 })
 
