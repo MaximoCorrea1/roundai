@@ -164,6 +164,10 @@ export const strings = {
     destination: 'va a tu FCI {perfil} · simulado',
     // {monto} = formatARS of the 12-month value of THIS sweep
     microProjection: 'este barrido valdría ~{monto} en 12 meses · simulado',
+    // ── full-screen pay (iter 3) ──
+    headerTitle: 'Pagar',
+    totalLabel: 'total a debitar',
+    back: 'Volver',
   },
   goal: {
     accumulatedLabel: 'este mes · simulado',
