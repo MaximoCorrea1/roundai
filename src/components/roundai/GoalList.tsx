@@ -23,8 +23,10 @@ export function GoalList({
   if (goals.length === 0) return null
 
   return (
-    <section className="mt-6">
-      <h3 className="mb-2.5 px-0.5 font-display text-[15.5px] font-semibold text-roundai-green">
+    <section className="mt-7">
+      {/* quieter in v3 (#5): a small uppercase label, not a full section heading —
+          the hero IS the meta; these are secondary and shouldn't compete with it */}
+      <h3 className="mb-2 px-0.5 text-[11.5px] font-semibold uppercase tracking-wide text-roundai-green/45">
         {strings.goal.goalsTitle}
       </h3>
       <div className="flex flex-col gap-2.5">

@@ -170,52 +170,65 @@ export const strings = {
     back: 'Volver',
   },
   goal: {
+    // ── v3 TEXT DIET ──
+    // The goal's NAME is the screen title; labels below are ≤3 words. Numbers
+    // carry the meaning, copy stays out of the way.
     accumulatedLabel: 'este mes · simulado',
-    heroCaption: 'acumulado para tu meta',
-    remaining: 'estás a {monto} de tu meta',
-    reached: '¡Llegaste a tu meta! ✦',
+    heroCaption: 'lo tuyo', // ring centre caption — the accumulated is "yours"
+    remaining: 'te falta {monto}', // ≤3 words; the ring already says "for your goal"
+    reached: '¡Llegaste! ✦',
     yield: 'tu plata rindió {monto} ✦ simulado',
-    // 12-month PROJECTION (conditional tense — never a promise): a just-activated
-    // account has $0 accrued, which is honest but reads dead in the demo.
     yieldLabel12m: 'rendiría en 12 meses ✦ simulado',
+    // OLD pace line (kept for back-compat / tests). The v3 screen uses paceV3 +
+    // the ETA anchor below instead — self-explanatory, no "¿qué significa?".
     pace: 'a este ritmo: {meses} meses',
-    sandbox: 'fondos simulados — sandbox',
-    portfolioTitle: 'Tu plata, invertida',
+    // v3 PACE, EXPLAINED — the "¿qué significa eso?" fix. {sweep} = ~monthly base
+    // sweep (formatARS), {meses} = calculator-derived months. Reads as a full
+    // sentence; the ETA month (computed in-component) is the emotional anchor.
+    paceV3: 'con ~{sweep}/mes en redondeos, llegás en ~{meses} meses',
+    paceArrived: 'ya llegaste a esta meta ✦', // remaining == 0
+    etaPrefix: 'llegás en', // tiny label above the big ETA month
+    // SURPRISE: after a payment lands, how many days closer this one coffee got
+    // you. {dias} = whole days (computed in-component from the live sweep ÷ daily
+    // rate). Singular/plural handled by picking the matching key.
+    nudgeDays: 'tu café de hoy te acercó {dias} días ✦',
+    nudgeDay: 'tu café de hoy te acercó 1 día ✦',
+    sandbox: 'simulado',
     active: 'tu perfil',
-    recalc: 'tu margen se reajusta solo: liquidez prevista {prevista} vs real {real}',
     comingSoon: 'Tu meta, en breve.',
-    // ── Goal page v2 (spec decisions #29, #30) ──
-    // Multi-goal section (#29): active goal is the ring hero; secondaries are cards.
-    goalsTitle: 'Tus metas',
-    activeBadge: 'recibe tus redondeos', // on the active goal (real)
-    simulatedBadge: 'simulada', // on the mocked secondary goal
-    activate: 'Activar', // selector CTA on a secondary card → becomes the hero
-    // Mocked secondary goal seeded at accept so multi-goal is demoable (#29).
+    // ── Multi-goal (#29) — quieter in v3 ──
+    goalsTitle: 'Otras metas', // was "Tus metas" — the hero IS a meta; these are the rest
+    activeBadge: 'activa', // ≤3 words; "recibe tus redondeos" was bloat next to the name
+    simulatedBadge: 'simulada',
+    activate: 'Activar',
     mockGoalLabel: 'Viaje a Bariloche',
-    // Streak chip (#30) — mocked, labeled. Near the hero.
-    streak: '✦ racha: 1 mes',
-    // Holdings / position breakdown (#30): aportado / rendimiento / total.
-    holdingsTitle: 'Tu posición',
-    holdingsAportado: 'aportado',
-    holdingsRendimiento: 'rendimiento · simulado',
-    holdingsTotal: 'total',
-    // 12m projection line beneath holdings (conditional, never a promise).
-    holdingsProjection: 'a 12 meses rendiría ~{monto} ✦ simulado',
-    // Three FCI risk levels — educational, no named instruments, "en criollo".
-    portfolio: {
-      conservador: {
-        name: 'Conservador',
-        copy: 'Casi todo en plazos cortos y pesos estables. Crece despacio, pero casi no se mueve para abajo.',
-      },
-      moderado: {
-        name: 'Moderado',
-        copy: 'Una mezcla: parte tranquila, parte con más empuje. Equilibra crecer con dormir tranquilo.',
-      },
-      agresivo: {
-        name: 'Agresivo',
-        copy: 'Más peso en activos que pueden volar… o caer. Apunta a rendir más a la larga, bancando los saltos.',
+    streak: '✦ 1 mes', // streak chip — quieter (was "✦ racha: 1 mes")
+    // ── Tu cartera (holdings + composition by profile) — v3 merged block ──
+    cartera: {
+      title: 'Tu cartera',
+      sub: 'según tu perfil · simulado', // composition is educational, clearly simulated
+      // position figures (≤3 words each)
+      aportado: 'aportado',
+      rendimiento: 'rinde · simulado',
+      total: 'total',
+      projection: 'a 12 meses ~{monto} ✦ simulado', // conditional, never a promise
+      // composition heading
+      mixLabel: 'cómo se reparte',
+      // generic CATEGORY names ONLY — NO instruments (compliance).
+      cats: {
+        mm: 'mercado de dinero',
+        rf: 'renta fija',
+        rv: 'renta variable',
       },
     },
+    // Educational composition per risk level (hardcoded, generic categories,
+    // "· simulado"). Percentages must sum to 100. NO named instruments.
+    composition: {
+      conservador: { mm: 80, rf: 15, rv: 5 },
+      moderado: { mm: 55, rf: 30, rv: 15 },
+      agresivo: { mm: 25, rf: 40, rv: 35 },
+    },
+    profileLabels: { conservador: 'Conservador', moderado: 'Moderado', agresivo: 'Agresivo' },
   },
   // Proposal v2 (decisions #25, #28, #33) — interpolated in src/lib/proposal.ts
   // from roundup.ts outputs ONLY (planGoal + trendOf). Tri-state, ≤2 lines per
