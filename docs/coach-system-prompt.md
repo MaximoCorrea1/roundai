@@ -111,9 +111,11 @@ nunca recalcules ni redondees; si un número no está acá, decí que no lo ten�
 
 ## EXAMPLE — rendered block for `mati` (perfil declarado moderado, margen 3,5%, goal `{type:'meta', amount:500.000, months:12}`)
 
-Produced by `buildSystemPrompt(profiles[0], {type:'meta', amount:500000, months:12}, 0.035311, 'moderado')`
-— the canonical comodo case (decision #25: $500.000 en 12 meses sale a 3,5%). Numbers come from
-`roundup.ts`, not typed by hand; change the profile/plazo/margin and they move together.
+Produced by `buildSystemPrompt(profiles[0], {type:'meta', amount:500000, months:12}, planGoal(profiles[0], 'moderado', 500000, 12).marginFraction, 'moderado')`
+— the canonical comodo case (decision #25: $500.000 en 12 meses sale a 3,5%, margen exacto
+`0.03531073…`, el mismo que la UI le pasa al coach). Numbers come from `roundup.ts`, not typed
+by hand; change the profile/plazo/margin and they move together. These figures are byte-identical
+to the PHASE 9 story chain shown on screen (the live coach quotes what the user saw).
 
 ```
 DATOS AUTORITATIVOS (pre-calculados por el sistema — citalos EXACTAMENTE,
@@ -128,7 +130,7 @@ nunca recalcules ni redondees; si un número no está acá, decí que no lo ten�
   cada compra se redondea un 3,5% para arriba y ese extra se
   invierte solo (ej.: un pago de $ 4.350 suma $ 154);
   con los gastos promedio del usuario eso junta ~$ 41.667/mes
-- No es una alcancía — la plata rinde: en 12 meses aportaría ~$ 500.004, que con retorno esperado serían ~$ 588.548 (+$ 88.544 · SIMULADO, no garantizado)
+- No es una alcancía — la plata rinde: en 12 meses aportaría ~$ 500.000, que con retorno esperado serían ~$ 588.543 (+$ 88.543 · SIMULADO, no garantizado)
 - Meta: $ 500.000 → 12 meses (sin contar rendimientos); con retorno esperado ~11 meses (rango 10–12 según mercado, simulado, no garantizado)
 ```
 
