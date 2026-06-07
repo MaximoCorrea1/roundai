@@ -15,6 +15,8 @@ import {
   savingsCapacity,
   monthlyContribution,
   monthsToGoal,
+  monthsAtRate,
+  scenarioMonths,
   liquidityBand,
   sweepForPayment,
   formatARS,
@@ -101,6 +103,15 @@ function renderGoal(profile: UserProfile, goal: Goal | null, marginFraction: num
         return `${target} → no alcanzable a margen sostenible — sé honesto y proponé alternativas`
       let proj = `${months} meses (sin contar rendimientos)`
       if (months > 24) proj += '; es un plazo largo: ofrecé alternativas con tacto'
+      // SCENARIOS (iteration-4): the live coach must cite the SAME returns-aware
+      // range the proposal shows — sin rendimientos vs esperado (rango opt–pes),
+      // always "simulado, no garantizado". Only when every scenario is reachable.
+      const monthly = monthlyContribution(profile, marginFraction)
+      const sin = monthsAtRate(goal.amount, monthly).months
+      const s = scenarioMonths(monthly, goal.amount)
+      if (sin != null && s.esperado != null && s.optimista != null && s.pesimista != null) {
+        proj += `; con retorno esperado ~${s.esperado} meses (rango ${s.optimista}–${s.pesimista} según mercado, simulado, no garantizado)`
+      }
       return `${target} → ${proj}`
     }
   }

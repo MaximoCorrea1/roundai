@@ -8,13 +8,21 @@ import {
   buildProposalPlan,
   buildProposalMessages,
   buildOpenPlan,
+  buildMechanismVisual,
+  buildNumbersBreakdown,
+  buildMarginAnchor,
+  buildScenariosLine,
   goalLabelOf,
   seedHistory,
   hasSustainableProposal,
 } from './proposal'
-import { activeProfile } from '../data/profiles'
+import { profiles, activeProfile } from '../data/profiles'
 import {
   planGoal,
+  trendOf,
+  scenarioMonths,
+  monthsAtRate,
+  savingsCapacity,
   formatARS,
   formatPct,
   monthlyContribution,
@@ -25,6 +33,7 @@ import type { RiskProfile } from './roundup'
 import type { Goal as ChatGoal } from './chat-types'
 
 const profile = activeProfile()
+const lu = profiles.find((p) => p.id === 'lu')!
 // Canonical comodo case: $500.000 in 12 months, moderado (ground-truth 3,5%).
 const goal: ChatGoal = { type: 'meta', amount: 500_000, months: 12 }
 const risk: RiskProfile = 'moderado'
@@ -157,19 +166,97 @@ describe('proposal cites the goal by name (iteration 3)', () => {
   })
 })
 
-describe('buildProposalMessages (iteration 3 — tendencies + mechanism)', () => {
-  test('emits the tendencies bubble then the mechanism bubble', () => {
-    const msgs = buildProposalMessages(profile, goal, risk)
-    expect(msgs).toHaveLength(2)
-    expect(msgs.every((m) => m.role === 'assistant')).toBe(true)
-    // tendencies cites the spend figure; mechanism teaches the café → sweep.
+describe('buildProposalMessages (iteration 4 — direction-aware tendencies only)', () => {
+  test('emits exactly the tendencies bubble (mechanism is now a visual card)', () => {
+    const msgs = buildProposalMessages(profile)
+    expect(msgs).toHaveLength(1)
+    expect(msgs[0].role).toBe('assistant')
+    // tendencies cites the spend figure.
     expect(msgs[0].content).toContain(formatARS(profile.gastoMensual))
-    expect(msgs[1].content).toContain(formatARS(DEMO_PAYMENT.amount))
   })
-  test('mechanism café sweep matches the calculator at the suggested margin', () => {
-    const msgs = buildProposalMessages(profile, goal, risk)
+})
+
+// ── iteration 4: direction-aware tendencies (CLIENT BUG FIX) ─────────────────
+
+describe('tendencies are DIRECTION-AWARE per series (iteration 4 bug fix)', () => {
+  test('mati (both series rising) reads "viene subiendo (+X%)" for both, no contradiction', () => {
+    const msg = buildProposalMessages(profile)[0].content
+    const gasto = trendOf(profile.gastoMensualHist)
+    const liq = trendOf(profile.liquidezFinDeMes)
+    expect(gasto.direction).toBe('sube')
+    expect(liq.direction).toBe('sube')
+    // both phrased as rising; the contradictory "viene creciendo (−1,9%)" can't occur.
+    expect(msg).toContain('viene subiendo')
+    expect(msg).not.toContain('viene bajando')
+    // closing anchor present exactly once.
+    expect(msg).toContain('comparando tus últimos meses')
+  })
+
+  test('lu (both series estable) reads "se mantiene estable" with NO percentage', () => {
+    const msg = buildProposalMessages(lu)[0].content
+    const gasto = trendOf(lu.gastoMensualHist)
+    const liq = trendOf(lu.liquidezFinDeMes)
+    expect(gasto.direction).toBe('estable')
+    expect(liq.direction).toBe('estable')
+    expect(msg).toContain('se mantiene estable')
+    // estable carries NO % — neither the +0,8% nor the −1,9% leaks in.
+    expect(msg).not.toContain('0,8%')
+    expect(msg).not.toContain('1,9%')
+    expect(msg).not.toContain('viene subiendo')
+    expect(msg).not.toContain('viene bajando')
+    expect(msg).not.toContain('viene creciendo')
+  })
+})
+
+describe('buildMechanismVisual (iteration 4 — inline split card data)', () => {
+  test('payAmount/toMerchant = café; toGoal = sweep at the suggested margin', () => {
+    const v = buildMechanismVisual(profile, goal, risk)
     const m = planGoal(profile, risk, goal.amount!, goal.months!).marginFraction
-    const sweep = formatARS(sweepForPayment(DEMO_PAYMENT.amount, m))
-    expect(msgs[1].content).toContain(sweep)
+    expect(v.payAmount).toBe(formatARS(DEMO_PAYMENT.amount))
+    expect(v.toMerchant).toBe(formatARS(DEMO_PAYMENT.amount))
+    expect(v.toGoal).toBe(formatARS(sweepForPayment(DEMO_PAYMENT.amount, m)))
+  })
+})
+
+describe('buildNumbersBreakdown (iteration 4 — TUS NÚMEROS)', () => {
+  test('ingresos/gastos/te-queda + margin formula all calculator-derived', () => {
+    const n = buildNumbersBreakdown(profile, margin)
+    expect(n.ingresos).toBe(formatARS(profile.ingresoMensual))
+    expect(n.gastos).toBe(formatARS(profile.gastoMensual))
+    expect(n.queda).toBe(formatARS(savingsCapacity(profile)))
+    expect(n.aporte).toBe(formatARS(monthlyContribution(profile, margin)))
+    expect(n.margenPct).toBe(formatPct(margin))
+  })
+})
+
+describe('buildMarginAnchor (iteration 4 — plain-words % anchor)', () => {
+  test('reads "{pct} = de cada $ 100, {pesos} a tu meta" via sweepForPayment(100)', () => {
+    const anchor = buildMarginAnchor(margin)
+    expect(anchor).toContain(formatPct(margin))
+    expect(anchor).toContain(formatARS(100))
+    expect(anchor).toContain(formatARS(sweepForPayment(100, margin)))
+  })
+  test('margin ≤ 0 → empty (no anchor)', () => {
+    expect(buildMarginAnchor(0)).toBe('')
+  })
+})
+
+describe('buildScenariosLine (iteration 4 — returns-aware range)', () => {
+  test('mati 3,5% / $500.000 → sin 12, esperado ~11, rango 10–12', () => {
+    const line = buildScenariosLine(profile, margin, 500_000)
+    const monthly = monthlyContribution(profile, margin)
+    const sin = monthsAtRate(500_000, monthly).months
+    const s = scenarioMonths(monthly, 500_000)
+    expect(line).toContain(`${sin} meses`)
+    expect(line).toContain(`~${s.esperado} meses`)
+    expect(line).toContain(`${s.optimista}–${s.pesimista}`)
+    expect(line).toContain('simulado, no garantizado')
+    // ground-truth the demo figures the client called out.
+    expect(sin).toBe(12)
+    expect(s).toEqual({ pesimista: 12, esperado: 11, optimista: 10 })
+  })
+  test('amount ≤ 0 or margin ≤ 0 → empty', () => {
+    expect(buildScenariosLine(profile, margin, 0)).toBe('')
+    expect(buildScenariosLine(profile, 0, 500_000)).toBe('')
   })
 })

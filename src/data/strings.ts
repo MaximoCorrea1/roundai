@@ -51,6 +51,20 @@ export const strings = {
       ahorrar: 'Quiero ahorrar',
       nose: 'No sé',
     },
+    // Goal select v2 (iteration-4: "reducí las opciones a dos"). The UI now shows
+    // ONLY these two: the 'meta' card carries a VISIBLE inline amount input + go
+    // arrow (typing+confirm replaces the separate amount step), and the 'rendir'
+    // card is the open plan (skips amount/timeline). 'ahorrar'/'nose' stay in the
+    // types/strings above for compat but are no longer rendered.
+    goalSelectV2: {
+      metaTitle: 'Quiero llegar a esta meta',
+      metaHint: 'escribí el monto',
+      metaInputLabel: 'Monto de tu meta',
+      metaPlaceholder: '0',
+      metaGo: 'Empezar',
+      rendirTitle: 'Quiero que mi plata rinda',
+      rendirHint: 'sin meta fija, plan abierto',
+    },
     // Label of the SavedGoal created on accept — by goal type, never invented.
     // Used as the FALLBACK when the user skips the optional name step.
     goalLabels: {
@@ -188,6 +202,10 @@ export const strings = {
     paceV3: 'con ~{sweep}/mes en redondeos, llegás en ~{meses} meses',
     paceArrived: 'ya llegaste a esta meta ✦', // remaining == 0
     etaPrefix: 'llegás en', // tiny label above the big ETA month
+    // ETA scenario range subtext (iteration-4): under the ETA month, an honest
+    // range from scenarioMonths. {optimista}/{pesimista} = months; the ✦ marks
+    // the optimistic edge. Always "simulado". Hidden when scenarios are null.
+    etaRange: '✦ {optimista}–{pesimista} meses según mercado · simulado',
     // SURPRISE: after a payment lands, how many days closer this one coffee got
     // you. {dias} = whole days (computed in-component from the live sweep ÷ daily
     // rate). Singular/plural handled by picking the matching key.
@@ -235,19 +253,70 @@ export const strings = {
   // bubble. Components never see these directly; they receive ready ChatMessages.
   proposal: {
     // (0) tendencies line — REAL data via trendOf(gastoHist) + trendOf(liquidez).
-    //     {gasto}/{gastoPct}/{liqPct} pre-rendered in proposal.ts. Plain words,
-    //     ≤2 lines: what you spend (drifting up) + that your leftover is growing.
+    //     DIRECTION-AWARE (iteration-4 bug fix): the spend + leftover phrases are
+    //     each built from trendOf().direction in proposal.ts and slotted in here,
+    //     so "viene subiendo/bajando/se mantiene estable" always matches the real
+    //     data — no more "estable (−1,9%)" contradictions. {gastoPhrase} and
+    //     {liqPhrase} are pre-rendered (see tendencyPhrases below). One closing
+    //     clause anchors the % once: "comparando tus últimos meses".
     tendencies:
-      'Gastás ~{gasto}/mes ({gastoPct}) y lo que te sobra a fin de mes viene creciendo ({liqPct}).',
-    // direction verbs (criollo, ≤2 words) keyed by trendOf direction.
-    trendVerb: { sube: 'suben suave', estable: 'están estables', baja: 'bajan' },
-    trendVerbLiq: { sube: 'también sube', estable: 'está estable', baja: 'baja' },
+      'Gastás ~{gasto}/mes y eso {gastoPhrase}. Lo que te sobra a fin de mes {liqPhrase} — comparando tus últimos meses.',
+    // Direction-aware phrase fragments, keyed by trendOf().direction. The {pct}
+    // token is filled (with sign) by proposal.ts for sube/baja; estable carries
+    // NO percentage (a ±2% number next to "estable" only confuses). The gasto vs
+    // liquidez voices differ slightly so the sentence reads natural.
+    tendencyVerbs: {
+      gasto: {
+        sube: 'viene subiendo ({pct})',
+        baja: 'viene bajando ({pct})',
+        estable: 'se mantiene estable',
+      },
+      liq: {
+        sube: 'viene subiendo ({pct})',
+        baja: 'viene bajando ({pct})',
+        estable: 'se mantiene estable',
+      },
+    },
     // (M) mechanism — taught BEFORE the proposal (iteration 3). {cafe} = café
     //     amount; {sweep} = sweepForPayment(café, default margin). The point a
     //     judge has to leave with: each purchase rounds an extra, no willpower.
     //     ≤2 lines.
     mechanism:
       'Cada compra redondea un extra a tu meta: un café de {cafe} → {sweep}, sin que lo pienses.',
+    // (M2) mechanism VISUAL caption (iteration-4): one short line UNDER the inline
+    //     split card so the picture carries the idea and the words just frame it.
+    mechanismCaption: 'Pagás una vez; el redondeo viaja solo a tu meta.',
+    // (M-visual) labels for the inline split card (reuse the payment split voice).
+    mechanismVisual: {
+      payLabel: 'café',
+      toMerchant: 'al comercio',
+      toGoal: 'a tu meta',
+    },
+    // (N) "TUS NÚMEROS" card (iteration-4) — the explicit breakdown a judge asked
+    //     for: ingresos − gastos → te queda, then margen = aporte ÷ gastos. ALL
+    //     figures calculator-derived in proposal.ts; rendered as a compact
+    //     tabular card (NOT a bubble). Header + per-row labels live here.
+    numbers: {
+      title: 'TUS NÚMEROS',
+      ingresos: 'ingresos',
+      gastos: 'gastos',
+      queda: 'te queda',
+      quedaSub: '/ mes',
+      margenLabel: 'margen',
+      // {aporte} = monthlyContribution, {gastos} = gastoMensual, {pct} = margin.
+      margenFormula: 'aporte ÷ gastos',
+    },
+    // (P) plain-words anchor for the margin % (iteration-4 "explicá los % mejor"):
+    //     one short line under the proposal. {pct} = formatPct(margin),
+    //     {pesos} = formatARS(sweepForPayment(100, margin)). Reads: "3,5% = de
+    //     cada $ 100 que gastás, $ 4 van a tu meta".
+    marginAnchor: '{pct} = de cada {cien} que gastás, {pesos} van a tu meta.',
+    // (S) SCENARIOS line (iteration-4): the proposal is an INVESTMENT, not a
+    //     piggy bank. Shown after the plan bubble. {sin} = months at flat sweep;
+    //     {esperado}/{optimista}/{pesimista} = scenarioMonths(...). Always
+    //     "simulado, no garantizado".
+    scenarios:
+      'Sin rendimientos: {sin} meses. Con retorno esperado: ~{esperado} meses ({optimista}–{pesimista} según mercado) · simulado, no garantizado.',
     // (A) comodo — deadline met at the floored required margin. Pedagogical &
     //     ≤2 lines: need/month → {margen} IS both the margin AND that share of
     //     your spending (in comodo they're equal by construction — the chip token

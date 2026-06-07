@@ -17,6 +17,7 @@ import {
   monthlyContribution,
   monthsToGoal,
   monthsAtRate,
+  scenarioMonths,
   savingsCapacity,
   computeOptimalMargin,
   clampMargin,
@@ -54,22 +55,36 @@ export interface ProposalPlan {
   capacityCapFraction: number
 }
 
-/** The es-AR rendering of the tendencies line (REAL trend data, plain words). */
+/**
+ * The es-AR rendering of the tendencies line (REAL trend data, plain words).
+ *
+ * DIRECTION-AWARE (iteration-4 bug fix): each series (spend, leftover) is phrased
+ * from its OWN trendOf().direction — "viene subiendo (+X%)" / "viene bajando
+ * (−X%)" / "se mantiene estable". The estable branch carries NO percentage (a
+ * ±2% number beside "estable" only confuses). The percent is anchored ONCE by the
+ * closing "comparando tus últimos meses" clause in the template, not per-number.
+ */
 function tendenciesLine(profile: UserProfile): string {
   const p = strings.proposal
   const gasto = trendOf(profile.gastoMensualHist)
   const liq = trendOf(profile.liquidezFinDeMes)
-  // pct sign: keep the "+5,9%" / "-3,1%" feel; formatPct already adds the sign
-  // for negatives, so prepend "+" only for non-negative non-zero values.
-  const pct = (f: number) => {
-    const s = formatPct(f)
-    return f > 0 ? `+${s}` : s
-  }
   return interpolate(p.tendencies, {
     gasto: formatARS(profile.gastoMensual),
-    gastoPct: pct(gasto.pct),
-    liqPct: pct(liq.pct),
+    gastoPhrase: trendPhrase(p.tendencyVerbs.gasto, gasto),
+    liqPhrase: trendPhrase(p.tendencyVerbs.liq, liq),
   })
+}
+
+/** Build one direction-aware phrase: sube/baja get a signed pct; estable gets none. */
+function trendPhrase(
+  verbs: { sube: string; baja: string; estable: string },
+  trend: { direction: 'sube' | 'estable' | 'baja'; pct: number },
+): string {
+  if (trend.direction === 'estable') return verbs.estable
+  // formatPct already prefixes "-" for negatives; add "+" for the positive case.
+  const s = formatPct(trend.pct)
+  const signed = trend.pct > 0 ? `+${s}` : s
+  return verbs[trend.direction].replace('{pct}', signed)
 }
 
 /**
@@ -89,6 +104,100 @@ function mechanismLine(profile: UserProfile, goal: Goal, risk: RiskProfile): str
   return interpolate(p.mechanism, {
     cafe: formatARS(cafe),
     sweep: formatARS(sweep),
+  })
+}
+
+/**
+ * Structured inputs for the inline mechanism VISUAL (iteration-4): the payment
+ * row + the split into merchant + sweep. Reuses the payment split language so one
+ * glance = understood. All figures calculator-derived (café amount, sweep at the
+ * effective margin). The component renders the arrow/card; this hands it numbers.
+ */
+export interface MechanismVisual {
+  /** café label + amount (the row at the top of the card). */
+  payAmount: string
+  /** what the merchant gets (= the café amount; the payment is unchanged). */
+  toMerchant: string
+  /** the round-up that travels to the goal (sweepForPayment at the margin). */
+  toGoal: string
+}
+
+export function buildMechanismVisual(
+  profile: UserProfile,
+  goal: Goal,
+  risk: RiskProfile,
+): MechanismVisual {
+  const hasTarget = !!(goal.amount && goal.amount > 0 && goal.months && goal.months > 0)
+  const margin = hasTarget
+    ? planGoal(profile, risk, goal.amount!, goal.months!).marginFraction
+    : computeOptimalMargin({ ...profile, riskProfile: risk })
+  const cafe = DEMO_PAYMENT.amount
+  const sweep = margin > 0 ? sweepForPayment(cafe, margin) : 0
+  return {
+    payAmount: formatARS(cafe),
+    toMerchant: formatARS(cafe),
+    toGoal: formatARS(sweep),
+  }
+}
+
+/**
+ * Structured "TUS NÚMEROS" breakdown (iteration-4): ingresos − gastos → te queda,
+ * plus margen = aporte ÷ gastos. ALL figures from the calculator; the component
+ * renders compact tabular rows. `margin` is the effective (committed/plan) margin
+ * so the aporte + percent match the proposal on screen.
+ */
+export interface NumbersBreakdown {
+  ingresos: string
+  gastos: string
+  queda: string
+  aporte: string
+  margenPct: string
+}
+
+export function buildNumbersBreakdown(profile: UserProfile, margin: number): NumbersBreakdown {
+  return {
+    ingresos: formatARS(profile.ingresoMensual),
+    gastos: formatARS(profile.gastoMensual),
+    queda: formatARS(savingsCapacity(profile)),
+    aporte: formatARS(monthlyContribution(profile, margin)),
+    margenPct: formatPct(margin),
+  }
+}
+
+/**
+ * The plain-words anchor for the margin % (iteration-4 "explicá los % mejor"):
+ * "{pct} = de cada $ 100 que gastás, {pesos} van a tu meta". {pesos} derives via
+ * sweepForPayment(100, margin) so the anchor uses the SAME per-payment math the
+ * round-up uses everywhere (no separate rounding). margin ≤ 0 → empty (no anchor).
+ */
+export function buildMarginAnchor(margin: number): string {
+  if (margin <= 0) return ''
+  return interpolate(strings.proposal.marginAnchor, {
+    pct: formatPct(margin),
+    cien: formatARS(100),
+    pesos: formatARS(sweepForPayment(100, margin)),
+  })
+}
+
+/**
+ * The SCENARIOS line (iteration-4): the proposal is an INVESTMENT, not a piggy
+ * bank — show the sweep-only timeline AND the returns-aware range. {sin} =
+ * monthsAtRate (flat sweep), {esperado}/{optimista}/{pesimista} =
+ * scenarioMonths(monthly, amount). Returns '' for open/amount-less plans or when
+ * any scenario is unreachable (no honest range to show). `margin` is the
+ * effective margin; `amount` the goal target.
+ */
+export function buildScenariosLine(profile: UserProfile, margin: number, amount: number): string {
+  if (!(amount > 0) || margin <= 0) return ''
+  const monthly = monthlyContribution(profile, margin)
+  const sin = monthsAtRate(amount, monthly).months
+  const s = scenarioMonths(monthly, amount)
+  if (sin == null || s.esperado == null || s.optimista == null || s.pesimista == null) return ''
+  return interpolate(strings.proposal.scenarios, {
+    sin: String(sin),
+    esperado: String(s.esperado),
+    optimista: String(s.optimista),
+    pesimista: String(s.pesimista),
   })
 }
 
@@ -232,18 +341,23 @@ export function buildOpenPlan(
 }
 
 /**
- * The bubbles shown BEFORE the interactive proposal block (iteration 3): the
- * plain-words tendencies line (decision #28) THEN the mechanism bubble that
- * teaches the round-up (café → sweep). The tri-state proposal itself is rendered
- * interactively by the component (tappable margin chip + CTAs), not a bubble.
- * One idea per bubble, ≤2 lines each.
+ * The bubble(s) shown BEFORE the interactive proposal block. Iteration-4: only
+ * the plain-words, DIRECTION-AWARE tendencies line is a staged bubble now — the
+ * mechanism is rendered as an inline VISUAL card (buildMechanismVisual), and the
+ * TUS NÚMEROS breakdown + margin anchor + scenarios line live in the proposal
+ * block. The tri-state proposal itself is rendered interactively by the component
+ * (tappable margin chip + CTAs), not a bubble.
+ *
+ * `mechanismLine` is retained (exported via tests/coach parity) as the textual
+ * fallback for the mechanism; the live UI uses the visual card.
  */
-export function buildProposalMessages(
-  profile: UserProfile,
-  goal: Goal,
-  risk: RiskProfile,
-): ChatMessage[] {
-  return [assistant(tendenciesLine(profile)), assistant(mechanismLine(profile, goal, risk))]
+export function buildProposalMessages(profile: UserProfile): ChatMessage[] {
+  return [assistant(tendenciesLine(profile))]
+}
+
+/** Textual mechanism line — retained for tests + as a non-visual fallback. */
+export function mechanismText(profile: UserProfile, goal: Goal, risk: RiskProfile): string {
+  return mechanismLine(profile, goal, risk)
 }
 
 /** Does this profile+risk+goal support a proposal with a CTA at all? */
