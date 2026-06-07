@@ -84,17 +84,17 @@ export function WalletHome({
           <BalanceCard label={w.balanceLabel} amount={formatARS(balance)} />
         </div>
 
-        {/* action row */}
-        <div className="grid shrink-0 grid-cols-3 gap-2.5">
-          <ActionButton label={w.actions.pay} onClick={onPay}>
-            <PayIcon />
-          </ActionButton>
-          <ActionButton label={w.actions.transfer}>
+        {/* action row — Pagar is the clear PRIMARY (filled, confident, wider,
+            breathing lime highlight). Transferir / Cargar are secondary. The
+            primary takes 2 of 4 columns so it reads as the obvious tap. */}
+        <div className="grid shrink-0 grid-cols-4 gap-2.5">
+          <PrimaryAction label={w.actions.pay} onClick={onPay} />
+          <SecondaryAction label={w.actions.transfer}>
             <TransferIcon />
-          </ActionButton>
-          <ActionButton label={w.actions.topUp}>
+          </SecondaryAction>
+          <SecondaryAction label={w.actions.topUp}>
             <TopUpIcon />
-          </ActionButton>
+          </SecondaryAction>
         </div>
 
         {/* THE roundai tile — between balance and ledger, prominent */}
@@ -121,25 +121,51 @@ export function WalletHome({
   )
 }
 
-function ActionButton({
+// PRIMARY action — Pagar. Filled roundai-green so it owns the row, spans 2 of
+// the 4 columns, lime icon disc + confident horizontal label, and a slow lime
+// "breath" highlight (pay-breath) so judges read it as the obvious tap. The
+// green also rhymes with the roundai tile below — one accent, coherent.
+function PrimaryAction({
   label,
-  children,
   onClick,
 }: {
   label: string
-  children: React.ReactNode
   onClick?: () => void
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      className="pay-breath col-span-2 flex items-center justify-center gap-2.5 rounded-2xl bg-roundai-green py-3.5 ring-1 ring-lime/40 transition-opacity duration-150 active:opacity-90"
+    >
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-lime text-roundai-green-deep">
+        <PayIcon />
+      </span>
+      <span className="text-[16px] font-bold tracking-tight text-cream">
+        {label}
+      </span>
+    </button>
+  )
+}
+
+// SECONDARY action — Transferir / Cargar. Quiet white cards, deliberately
+// lighter than Pagar so the hierarchy reads instantly.
+function SecondaryAction({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
       className="flex flex-col items-center gap-1.5 rounded-2xl bg-nimbo-surface py-3 shadow-[var(--shadow-card)] transition-transform active:scale-[0.97]"
     >
       <span className="grid h-9 w-9 place-items-center rounded-full bg-nimbo-tint text-nimbo-slate-deep">
         {children}
       </span>
-      <span className="text-[12px] font-medium text-ink">{label}</span>
+      <span className="text-[13px] font-semibold text-ink">{label}</span>
     </button>
   )
 }
