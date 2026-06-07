@@ -54,8 +54,10 @@ export function MarginTweaker({
   // Effective range: at least the floor, never above the capacity cap or 20%.
   const max = Math.max(FLOOR, Math.min(capacityCapFraction, CEIL))
   const clamp = (m: number) => Math.min(max, Math.max(FLOOR, m))
-  // Snap the initial margin to the step grid within range.
-  const [margin, setMargin] = useState(() => clamp(snap(initialMargin)))
+  // Keep the initial margin EXACT (it's the proposal's unsnapped plan margin —
+  // snapping it here made the tweaker open showing different numbers than the
+  // bubble beside it: 13 meses/$152 vs 12 meses/$154). Snap only on user steps.
+  const [margin, setMargin] = useState(() => clamp(initialMargin))
 
   const capacity = savingsCapacity(profile)
   const contribution = monthlyContribution(profile, margin)
