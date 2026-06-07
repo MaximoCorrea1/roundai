@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type Dispatch } from 'react'
 import type { AppState, Action } from '@/components/AppShell'
-import type { GoalType, Goal, SavedGoal } from '@/lib/chat-types'
+import type { Goal, SavedGoal } from '@/lib/chat-types'
 import type { RiskProfile, UserProfile } from '@/lib/roundup'
 import { profiles } from '@/data/profiles'
 import { formatARS, formatPct } from '@/lib/roundup'
@@ -16,10 +16,18 @@ import {
 import { useChat } from '@/lib/useChat'
 import { strings } from '@/data/strings'
 import { savingsCapacity } from '@/lib/roundup'
+import {
+  buildMechanismVisual,
+  buildNumbersBreakdown,
+  buildMarginAnchor,
+  buildScenariosLine,
+} from '@/lib/proposal'
 import { MiniappHeader } from './MiniappHeader'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
-import { OptionButtons } from './OptionButtons'
+import { GoalSelectV2 } from './GoalSelectV2'
+import { MechanismVisualCard } from './MechanismVisualCard'
+import { NumbersCard } from './NumbersCard'
 import { AmountInput } from './AmountInput'
 import { GoalNameInput } from './GoalNameInput'
 import { QuizStep } from './QuizStep'
@@ -127,7 +135,7 @@ export function ChatScreen({
       return
     }
 
-    const bubbles = buildProposalMessages(profile, state.goal, risk)
+    const bubbles = buildProposalMessages(profile)
     const local: ReturnType<typeof setTimeout>[] = []
     let t = PROPOSAL_STEP
     bubbles.forEach((msg, i) => {
@@ -148,16 +156,27 @@ export function ChatScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.chatPhase])
 
-  function handleSelectGoal(type: GoalType) {
-    const label = strings.onboarding.goalOptions[type]
-    dispatch({ type: 'PUSH_MESSAGE', message: { role: 'user', content: label } })
-    const needsAmount = type === 'meta' || type === 'ahorrar'
-    // rendir/nose carry no amount → skip goalInput AND timeline, straight to proposal.
+  // Goal-select v2 (iteration-4): only TWO options. The 'meta' card carries an
+  // inline amount input, so picking it ALSO fixes the amount in one step (echoed
+  // as one user turn: "<meta option> · <monto>") → straight to the name step.
+  function handleSelectMeta(amount: number) {
+    const label = strings.onboarding.goalOptions.meta
     dispatch({
-      type: 'SELECT_GOAL',
-      goal: { type },
-      phase: needsAmount ? 'goalInput' : 'proposal',
+      type: 'PUSH_MESSAGE',
+      message: { role: 'user', content: `${label} · ${formatARS(amount)}` },
     })
+    // SELECT_GOAL with the amount baked in, jumping to the name step (the
+    // separate amount step is now folded into the card).
+    dispatch({ type: 'SELECT_GOAL', goal: { type: 'meta', amount }, phase: 'goalName' })
+  }
+
+  function handleSelectRendir() {
+    dispatch({
+      type: 'PUSH_MESSAGE',
+      message: { role: 'user', content: strings.onboarding.goalOptions.rendir },
+    })
+    // rendir carries no amount → skip goalInput AND timeline, straight to proposal.
+    dispatch({ type: 'SELECT_GOAL', goal: { type: 'rendir' }, phase: 'proposal' })
   }
 
   function handleConfirmAmount(amount: number) {
@@ -227,7 +246,10 @@ export function ChatScreen({
   }
   function handleChangeGoal() {
     dispatch({ type: 'SET_MARGIN', marginFraction: 0 })
-    dispatch({ type: 'SET_PHASE', phase: 'goalInput' })
+    // v2: the amount lives in the goalSelect card, so "Cambiar meta" returns to
+    // the goal-select surface (re-pick + re-enter the monto) rather than the
+    // now-folded standalone amount step.
+    dispatch({ type: 'SET_PHASE', phase: 'goalSelect' })
     setProposalReady(false)
   }
 
@@ -264,9 +286,15 @@ export function ChatScreen({
             {state.chatPhase === 'goalSelect' && (
               <>
                 <StepLabel>{stepLabels.goalSelect}</StepLabel>
-                <OptionButtons onSelect={handleSelectGoal} />
+                <GoalSelectV2
+                  onSelectMeta={handleSelectMeta}
+                  onSelectRendir={handleSelectRendir}
+                />
               </>
             )}
+            {/* goalInput: legacy standalone amount step. v2 folds the monto into
+                the goal-select card, so this is only a compat fallback for any
+                path that still routes here. */}
             {state.chatPhase === 'goalInput' && (
               <>
                 <StepLabel>{stepLabels.amount}</StepLabel>
@@ -296,6 +324,7 @@ export function ChatScreen({
                   displayMargin={displayMargin}
                   profile={profile}
                   risk={risk}
+                  goal={state.goal!}
                   amount={state.goal?.amount}
                   onCommitMargin={handleCommitMargin}
                   onAccept={handleAccept}
@@ -341,6 +370,7 @@ function ProposalBlock({
   displayMargin,
   profile,
   risk,
+  goal,
   amount,
   onCommitMargin,
   onAccept,
@@ -351,21 +381,33 @@ function ProposalBlock({
   displayMargin: number
   profile: UserProfile
   risk: RiskProfile
+  goal: Goal
   amount?: number
   onCommitMargin: (margin: number) => void
   onAccept: (margin: number) => void
   onChangeTimeline: () => void
   onChangeGoal: () => void
 }) {
-  const p = strings.proposal
   const [open, setOpen] = useState(false)
 
-  // Degenerate inviable: honest copy, NO CTA, no tappable margin.
+  // Inline VISUAL + breakdown shown WITH the proposal (iteration-4): the
+  // mechanism split card teaches the round-up at a glance; the TUS NÚMEROS card
+  // shows the ingresos/gastos/te-queda breakdown + the margin formula. Both are
+  // calculator-derived via proposal.ts. The numbers card uses the effective
+  // (committed/plan) margin so its aporte/percent match the proposal bubble.
+  const mechVisual = buildMechanismVisual(profile, goal, risk)
+  const numbers = buildNumbersBreakdown(profile, displayMargin)
+
+  // Degenerate inviable: honest copy, NO CTA, no tappable margin. Still show the
+  // mechanism visual so the judge understands the product even without a plan.
   if (!plan.hasCta) {
     return (
-      <div className="flex w-full justify-start">
-        <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[15.5px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]">
-          {renderEmphasis(plan.text)}
+      <div className="flex w-full flex-col gap-2.5 pt-1">
+        <MechanismVisualCard visual={mechVisual} />
+        <div className="flex w-full justify-start">
+          <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[16.5px] leading-[1.5] text-roundai-green ring-1 ring-roundai-green/[0.06]">
+            {renderEmphasis(plan.text)}
+          </div>
         </div>
       </div>
     )
@@ -377,16 +419,46 @@ function ProposalBlock({
   const renderedCurrent = formatPct(displayMargin)
   const [before, after] = splitOnce(plan.text, renderedDefault)
 
+  // Plain-words anchor for the % + the scenarios (returns-aware) line — both
+  // calculator-derived; scenarios is '' for open/amount-less plans.
+  const marginAnchor = buildMarginAnchor(displayMargin)
+  const scenariosLine =
+    amount && amount > 0 ? buildScenariosLine(profile, displayMargin, amount) : ''
+
   return (
     <div className="flex w-full flex-col gap-2.5 pt-1">
-      {/* the proposal bubble — coach voice, margin as a tappable lime chip */}
+      {/* (1) the inline mechanism VISUAL — the killer feature at a glance */}
+      <MechanismVisualCard visual={mechVisual} />
+
+      {/* (2) TUS NÚMEROS — the desglose the client asked for */}
+      <NumbersCard data={numbers} />
+
+      {/* (3) the proposal bubble — coach voice, margin as a tappable lime chip */}
       <div className="flex w-full justify-start">
-        <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[15.5px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]">
+        <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[16.5px] leading-[1.5] text-roundai-green ring-1 ring-roundai-green/[0.06]">
           {renderEmphasis(before)}
           <MarginChip label={renderedCurrent} onTap={() => setOpen((v) => !v)} />
           {renderEmphasis(after)}
         </div>
       </div>
+
+      {/* (4) plain-words anchor for the % — "de cada $ 100, $ 4 a tu meta" */}
+      {marginAnchor && (
+        <div className="flex w-full justify-start">
+          <div className="max-w-[88%] rounded-[14px] bg-lime/[0.16] px-3.5 py-2 text-[14.5px] leading-snug text-roundai-green-deep ring-1 ring-lime/30">
+            {renderEmphasis(marginAnchor)}
+          </div>
+        </div>
+      )}
+
+      {/* (5) SCENARIOS — the proposal is an investment, not a piggy bank */}
+      {scenariosLine && (
+        <div className="flex w-full justify-start">
+          <div className="max-w-[88%] rounded-[14px] bg-roundai-green/[0.05] px-3.5 py-2 text-[13.5px] leading-snug text-roundai-green/75 ring-1 ring-roundai-green/[0.08]">
+            {renderEmphasis(scenariosLine)}
+          </div>
+        </div>
+      )}
 
       {/* inline tweaker */}
       {open && (
@@ -424,18 +496,21 @@ function MarginChip({
   onTap: () => void
 }) {
   return (
-    <span className="mx-0.5 inline-flex items-center align-baseline">
+    // mx-1.5 (~6px) gives the chip breathing room from the words on either side
+    // (iteration-4 spacing fix — "las palabras al lado del margen están muy
+    // pegadas"). The trailing space keeps the right edge honest when text wraps.
+    <span className="mx-1.5 inline-flex items-center align-baseline">
       <button
         type="button"
         onClick={onTap}
-        className="roundai-margin-chip inline-flex items-center gap-1 rounded-full bg-lime px-2 py-0.5 align-baseline text-[14.5px] font-semibold text-roundai-green-deep ring-1 ring-lime-deep/40 transition-transform active:scale-95"
+        className="roundai-margin-chip inline-flex items-center gap-1 rounded-full bg-lime px-2.5 py-0.5 align-baseline text-[15px] font-semibold text-roundai-green-deep ring-1 ring-lime-deep/40 transition-transform active:scale-95"
       >
         <style>{MARGIN_CHIP_CSS}</style>
-        <span aria-hidden="true" className="text-[11.5px]">
+        <span aria-hidden="true" className="text-[12px]">
           ✦
         </span>
         <span className="tnum">{label}</span>
-        <span className="text-[11px] font-medium text-roundai-green/60">
+        <span className="text-[11.5px] font-medium text-roundai-green/60">
           {strings.tweaker.chipHint}
         </span>
       </button>
@@ -478,7 +553,7 @@ function ProposalCtas({
       <button
         type="button"
         onClick={onAccept}
-        className="flex items-center gap-2 rounded-full bg-roundai-green px-5 py-2.5 text-[15.5px] font-semibold text-lime shadow-[0_8px_22px_-10px_rgba(7,42,32,0.6)] transition-transform active:scale-[0.98]"
+        className="flex items-center gap-2 rounded-full bg-roundai-green px-5 py-2.5 text-[16.5px] font-semibold text-lime shadow-[0_8px_22px_-10px_rgba(7,42,32,0.6)] transition-transform active:scale-[0.98]"
       >
         <span aria-hidden="true">✦</span>
         {acceptLabel}
@@ -496,7 +571,7 @@ function SecondaryCta({ label, onClick }: { label: string; onClick: () => void }
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full bg-roundai-green/[0.06] px-4 py-2.5 text-[14.5px] font-semibold text-roundai-green ring-1 ring-roundai-green/[0.12] transition-transform active:scale-[0.98]"
+      className="rounded-full bg-roundai-green/[0.06] px-4 py-2.5 text-[15.5px] font-semibold text-roundai-green ring-1 ring-roundai-green/[0.12] transition-transform active:scale-[0.98]"
     >
       {label}
     </button>
