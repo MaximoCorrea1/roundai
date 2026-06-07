@@ -65,7 +65,7 @@ export function GoalNameInput({
           disabled={!canConfirm}
           onClick={() => onConfirm(trimmed)}
           className={
-            'flex-1 rounded-[12px] py-2.5 text-[15.5px] font-semibold transition-all ' +
+            'flex-1 rounded-[12px] py-2.5 text-[16.5px] font-semibold transition-all ' +
             (canConfirm
               ? 'bg-roundai-green text-lime active:scale-[0.99]'
               : 'bg-roundai-green/15 text-roundai-green/30')

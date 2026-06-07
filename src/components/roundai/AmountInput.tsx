@@ -76,7 +76,7 @@ export function AmountInput({
         disabled={!canConfirm}
         onClick={() => onConfirm(value)}
         className={
-          'mt-0.5 rounded-[12px] py-2.5 text-[15.5px] font-semibold transition-all ' +
+          'mt-0.5 rounded-[12px] py-2.5 text-[16.5px] font-semibold transition-all ' +
           (canConfirm
             ? 'bg-roundai-green text-lime active:scale-[0.99]'
             : 'bg-roundai-green/15 text-roundai-green/30')

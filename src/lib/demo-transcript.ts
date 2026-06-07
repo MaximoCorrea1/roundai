@@ -18,11 +18,14 @@ import {
   formatPct,
 } from './roundup'
 
-// The 4 canonical phrasings, exported for the Phase-7 demo script (copy-paste).
+// The canonical phrasings, exported for the Phase-7 demo script (copy-paste).
+// (iteration-4) added "¿Y si me arrepiento?" — a common first-timer fear; the
+// answer is educational (pausar/bajar cuando quieras, sin penalidad).
 export const DEMO_PROMPTS: string[] = [
   '¿Por qué este margen y no más?',
   '¿Qué es un FCI?',
   'Este mes no me alcanza, ¿puedo bajarlo?',
+  '¿Y si me arrepiento?',
   '¿Me conviene comprar dólares?',
 ]
 
@@ -53,26 +56,37 @@ export function demoReplyFor(
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')
   const text = (lastUser?.content ?? '').toLowerCase()
 
-  // 1. margin-why — sustainability vs capacity, cite the committed margin.
+  // Replies use real '\n' line breaks (MessageBubble renders whitespace-pre-line)
+  // + *bold* for the load-bearing figure. Short paragraphs, concrete numbers, ≤4
+  // lines, one idea, persona-consistent with coach.ts. (iteration-4 formatting.)
+
+  // 1. arrepentimiento — pausar/bajar cuando quieras, sin penalidad (educational).
+  //    Checked BEFORE "bajar" so "¿y si me arrepiento?" never falls into the
+  //    tight-month branch.
+  if (/arrepient|me arrepiento|cancel|dar.*baja|salir|me sale mal|y si no/.test(text)) {
+    return `Tranqui, no hay letra chica.\nLo pausás o lo bajás cuando quieras, sin penalidad ni costo.\nLo que ya juntaste sigue siendo *tuyo*: lo retirás o lo dejás rindiendo.\nLa idea es que pruebes sin miedo.`
+  }
+
+  // 2. margin-why — sustainability vs capacity, cite the committed margin.
   if (/por\s*qué|porque|\d\s*%|margen/.test(text)) {
-    return `Elegí ${pct} porque entra cómodo en los ~${cap} que te suelen sobrar a fin de mes: son ~${aporte} por mes y no te aprietan. Si subiéramos más, dejaría de ser sostenible y lo terminarías pausando.`
+    return `Elegí *${pct}* porque entra cómodo en los ~${cap} que te sobran a fin de mes.\nSon ~${aporte} por mes: no te aprietan.\nSi subiéramos más, dejaría de ser sostenible y lo terminarías pausando.`
   }
 
-  // 2. fci-explainer — qué es un FCI en criollo, riesgo por niveles, sin instrumentos.
+  // 3. fci-explainer — qué es un FCI en criollo, riesgo por niveles, sin instrumentos.
   if (/fci|fondo/.test(text)) {
-    return `Un FCI es una canasta donde juntás tu plata con la de otros y un equipo la administra por vos: no tenés que elegir nada a mano. Hay de menos a más riesgo, y vos elegís el nivel con el que dormís tranquilo.`
+    return `Un FCI es una canasta: juntás tu plata con la de otros y un equipo la administra por vos.\nNo tenés que elegir nada a mano.\nHay de menos a más riesgo — vos elegís el nivel con el que dormís tranquilo.`
   }
 
-  // 3. tight-month — el margen se reajusta solo; podés pausarlo cuando quieras.
+  // 4. tight-month — el margen se reajusta solo; podés pausarlo cuando quieras.
   if (/no me alcanza|mes\s+(flojo|apretado)|bajar|pausar|pausarlo/.test(text)) {
-    return `Tranqui: el margen se reajusta solo según tu liquidez real, así que un mes flojo aporta menos sin que hagas nada. Y si querés, lo pausás cuando quieras y lo retomás después.`
+    return `Tranqui.\nEl margen se reajusta solo según tu liquidez real: un mes flojo aporta menos sin que hagas nada.\nY si querés, lo pausás cuando quieras y lo retomás después.`
   }
 
-  // 4. compliance-deflection — warm, no recomienda activos, vuelve a la meta.
+  // 5. compliance-deflection — warm, no recomienda activos, vuelve a la meta.
   if (/d[oó]lar|bitcoin|cripto|acci[oó]n|invierto en/.test(text)) {
-    return `Esto es una demo educativa, así que no te voy a recomendar un activo puntual. Lo que sí hacemos es armar el hábito: cada pago suma ${pct} a tu meta, y de a poco aprendés en el camino.`
+    return `Esto es una demo educativa, así que no te voy a recomendar un activo puntual.\nLo que sí hacemos es armar el hábito: cada pago suma *${pct}* a tu meta.\nDe a poco aprendés en el camino.`
   }
 
   // Generic warm fallback — short, returns to the goal.
-  return `Buena pregunta. Acá lo importante es el hábito: cada pago barre ${pct} (~${aporte} por mes) hacia tu meta, sin que lo sientas. ¿Querés que lo veamos sobre tu meta?`
+  return `Buena pregunta.\nAcá lo importante es el hábito: cada pago barre *${pct}* (~${aporte} por mes) hacia tu meta, sin que lo sientas.\n¿Querés que lo veamos sobre tu meta?`
 }

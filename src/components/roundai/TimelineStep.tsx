@@ -49,7 +49,7 @@ export function TimelineStep({
           type="button"
           disabled={disabled}
           onClick={() => setCustom(true)}
-          className="rounded-[12px] bg-roundai-green/[0.04] py-2.5 text-[14.5px] font-semibold text-roundai-green/70 ring-1 ring-roundai-green/[0.10] transition-all active:scale-[0.99] active:bg-roundai-green/[0.08] disabled:opacity-45"
+          className="rounded-[12px] bg-roundai-green/[0.04] py-2.5 text-[15.5px] font-semibold text-roundai-green/70 ring-1 ring-roundai-green/[0.10] transition-all active:scale-[0.99] active:bg-roundai-green/[0.08] disabled:opacity-45"
         >
           {t.chips.otro}
         </button>
@@ -111,7 +111,7 @@ function Chip({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="tnum rounded-[12px] bg-roundai-green/[0.06] py-3 text-[14.5px] font-semibold text-roundai-green ring-1 ring-roundai-green/[0.10] transition-all active:scale-[0.97] active:bg-roundai-green/[0.10] disabled:opacity-45"
+      className="tnum rounded-[12px] bg-roundai-green/[0.06] py-3 text-[15.5px] font-semibold text-roundai-green ring-1 ring-roundai-green/[0.10] transition-all active:scale-[0.97] active:bg-roundai-green/[0.10] disabled:opacity-45"
     >
       {label}
     </button>
