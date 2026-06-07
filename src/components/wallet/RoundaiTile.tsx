@@ -21,7 +21,7 @@ export function RoundaiTile({
       type="button"
       onClick={onOpenRoundai}
       aria-label={`${title} · ${poweredBy}`}
-      className="roundai-tile relative block w-full cursor-pointer overflow-hidden bg-roundai-green text-left transition-transform duration-200 active:scale-[0.985]"
+      className="roundai-tile relative block w-full cursor-pointer overflow-hidden bg-roundai-green text-left transition-opacity duration-150 active:opacity-90"
       style={{ borderRadius: 'var(--radius-lg)' }}
     >
       {/* atmosphere inside the green field — soft glow + lime hint, mirrors the backdrop */}
