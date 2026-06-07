@@ -336,10 +336,11 @@ export function AppShell({
         )}
       </div>
 
-      {/* Payment layer — a modal sheet/success that lives INSIDE the phone screen
-          (its scrim covers only this 393×852 viewport, never the bezel). Mounted
-          as a sibling of the screen track, above it, but the dynamic island /
-          home indicator (z-30, in PhoneFrame) still paint on top of it. */}
+      {/* Payment layer (iter 3) — a FULL-SCREEN pay/success experience that owns
+          the whole phone viewport (no more bottom sheet + scrim). It slides up
+          from the bottom over the wallet. Mounted as a sibling of the screen
+          track at z-20, so it covers the wallet but the dynamic island / home
+          indicator (z-30, in PhoneFrame) still paint on top of it. */}
       {state.payment !== 'idle' && (
         <div className="absolute inset-0 z-20">
           {state.payment === 'sheet' ? (
