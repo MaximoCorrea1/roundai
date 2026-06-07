@@ -55,15 +55,13 @@ export function RoundaiTile({
         </span>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-[17px] font-semibold tracking-tight text-cream">
-              {title}
-            </span>
-            <span className="text-[11px] font-medium lowercase text-lime/85">
-              {poweredBy}
-            </span>
-          </div>
-          <p className="mt-0.5 text-[13px] leading-snug text-cream/70">{cta}</p>
+          <span className="block font-display text-[19px] font-bold leading-tight tracking-tight text-cream">
+            {title}
+          </span>
+          <span className="block text-[12.5px] font-semibold lowercase leading-tight text-lime">
+            {poweredBy}
+          </span>
+          <p className="mt-1 text-[14px] font-medium leading-snug text-cream/85">{cta}</p>
         </div>
 
         {/* chevron — invites the tap */}

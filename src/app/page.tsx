@@ -71,7 +71,7 @@ export default async function Home({
             ✦
           </span>
         </div>
-        <p className="mt-2 font-display text-[clamp(13px,1.2vw,16px)] font-medium leading-snug text-cream/70">
+        <p className="mt-2 font-display text-[clamp(14px,1.3vw,17px)] font-medium leading-snug text-cream/85">
           el copiloto financiero embebido en tu billetera
         </p>
       </div>
@@ -99,10 +99,10 @@ export default async function Home({
                 href={profileHref(id)}
                 aria-current={current ? 'page' : undefined}
                 className={
-                  'rounded-full px-3 py-1 text-[12px] font-semibold transition-colors ' +
+                  'rounded-full px-3 py-1 text-[13px] font-semibold transition-colors ' +
                   (current
                     ? 'bg-lime text-roundai-green-deep'
-                    : 'text-cream/55 hover:text-cream/85')
+                    : 'text-cream/65 hover:text-cream/90')
                 }
               >
                 {d.profiles[id]}

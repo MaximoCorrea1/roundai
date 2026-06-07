@@ -34,7 +34,7 @@ export function BottomNav({
                 aria-current={isActive ? 'page' : undefined}
               >
                 <NavIcon nav={item.key} active={isActive} />
-                <span className="text-[10.5px] font-medium tracking-wide">
+                <span className="text-[12px] font-semibold tracking-wide">
                   {item.label}
                 </span>
               </button>

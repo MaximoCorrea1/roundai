@@ -21,13 +21,15 @@ Tokens are declared as CSS variables inside `@theme` in `src/app/globals.css`. N
 | `--color-lime-deep` | `#A9DA3E` | lime pressed / on cream for contrast |
 | `--color-nimbo-surface` | `#FFFFFF` | host wallet card surfaces |
 | `--color-nimbo-bg` | `#F4F6F9` | host wallet app canvas (cool off-white) |
-| `--color-nimbo-slate` | `#5B6B82` | host wallet neutral chrome / secondary icons |
-| `--color-nimbo-slate-deep` | `#2B3A4F` | slate headings / active nav |
+| `--color-nimbo-slate` | `#4F5D73` | host wallet neutral chrome / secondary text (darkened iter 3 → ≥4.5:1 on white) |
+| `--color-nimbo-slate-deep` | `#243345` | slate headings / active nav (darkened iter 3) |
 | `--color-nimbo-line` | `#E6EAF0` | hairline borders / dividers |
 | `--color-nimbo-tint` | `#EEF2F8` | chip / action-button fill |
 | `--color-nimbo-blue` | `#2F6DF0` | the wallet's restrained primary blue |
-| `--color-ink` | `#131A24` | primary text |
-| `--color-muted` | `#76839A` | secondary text |
+| `--color-ink` | `#0E141D` | primary text (darkened iter 3 → ≥7:1 on white & cream) |
+| `--color-muted` | `#5D6B82` | secondary text (darkened iter 3 → ≥4.5:1 on white) |
+
+> **Contrast pass (iteration 3):** `ink`, `muted`, `nimbo-slate`, and `nimbo-slate-deep` were darkened so text clears WCAG AA/AAA when projected. Body/label font-weights were also bumped (medium → semibold) where thin type washed out.
 
 ### Typography (locked Phase 1)
 
@@ -38,6 +40,8 @@ Loaded via `next/font/google` in `src/app/layout.tsx`, exposed as CSS variables 
 | `--font-display` | **Bricolage Grotesque** (variable, no weight key) | wordmark, headings, the roundai personality |
 | `--font-body` | **Hanken Grotesk** | body copy, chat, chrome (refined, non-generic; NOT Inter/Roboto) |
 | `--font-mono` | **Spline Sans Mono** | ALL monetary figures — guarantees tabular column alignment (`.tnum` utility: `font-variant-numeric: tabular-nums`) |
+
+**Type scale (iteration 3 — projector legibility):** the global rem base is **17.5px** (`html { font-size: 17.5px }`, up from the browser-default 16px) so every rem-based size scales ~9% larger. Arbitrary `px` text in components was swept up to the new intent: body ≥15px, section titles ≥17px (bold), nav/labels ≥12px, the balance hero 42px bold. Nothing functional renders below ~13px.
 
 ### Radius (locked Phase 1)
 
@@ -72,7 +76,7 @@ Loaded via `next/font/google` in `src/app/layout.tsx`, exposed as CSS variables 
 
 ### Wallet home (Nimbo)
 
-Neutral, believable neobank. **Balance card** (tabular numerals), **action row** (QR / pagar / transferir), **transaction ledger** (≈8 believable AR transactions summing exactly to `gastoMensual`), **bottom nav**, and the **roundai tile** — visually distinct (roundai green on the neutral wallet), clearly tappable, labeled "Inversiones · powered by roundai," with a subtle pulse to draw the judge's eye. The tile is the only thing that breaks the neutral palette — that contrast is the embedded-thesis cue.
+Neutral, believable neobank. **Balance card** (tabular numerals, 42px hero), **action row** — **Pagar is the PRIMARY action** (filled roundai-green, lime icon disc, bold cream label, spans 2 of 4 columns, breathing lime highlight) with **Transferir / Cargar** as quiet secondary white cards; the hierarchy must read instantly (iteration 3 fix — the old three-equal-cards row had no primary). **Transaction ledger** (≈8 believable AR transactions summing exactly to `gastoMensual`), **bottom nav**, and the **roundai tile** — visually distinct (roundai green on the neutral wallet), clearly tappable, labeled "Inversiones · powered by roundai," with a slow breath + persistent lime ring to draw the judge's eye. The tile is the only thing that breaks the neutral palette — that contrast is the embedded-thesis cue.
 
 ### Payment sheet + payment success
 
@@ -103,4 +107,5 @@ Neutral, believable neobank. **Balance card** (tabular numerals), **action row**
 - **In-phone slide transitions** between screens (CSS transform on a track inside the phone screen). Smooth, short.
 - **One celebration moment, exactly one:** the first sweep landing in the goal ring. A single well-timed animation — habit-formation framing.
 - **No confetti spam.** Restraint everywhere else; the one celebration earns its weight by being the only one.
+- **Judge-magnet "breath" (iteration 3):** the two elements judges should want to touch — the **roundai tile** and the **Pagar CTA** — share one slow breath language: `scale(1) → scale(1.02)` + a soft lime glow, `3.5s ease-in-out infinite alternate` (`roundai-breath` / `pay-breath` keyframes). Each also carries a *persistent* lime highlight at rest (the tile a 1px lime ring, Pagar a `ring-lime/40`) so they read as "touch me" even when motion is off. The tile keeps its `roundai-glint` ✦. **All breath/glint animations are killed under `prefers-reduced-motion: reduce`.** One accent (lime), no carnival.
 - CSS transforms/transitions first; reach for Framer Motion only if a specific transition feels stiff.

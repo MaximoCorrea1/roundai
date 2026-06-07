@@ -21,15 +21,15 @@
   /* ── Nimbo (host wallet) layer ── */
   --color-nimbo-surface: #ffffff; /* card surfaces */
   --color-nimbo-bg: #f4f6f9; /* app canvas behind cards (cool off-white) */
-  --color-nimbo-slate: #5b6b82; /* neutral chrome / secondary icons */
-  --color-nimbo-slate-deep: #2b3a4f; /* slate headings / active nav */
+  --color-nimbo-slate: #4f5d73; /* neutral chrome / secondary text — darkened for ≥4.5:1 on white */
+  --color-nimbo-slate-deep: #243345; /* slate headings / active nav — darker */
   --color-nimbo-line: #e6eaf0; /* hairline borders / dividers */
   --color-nimbo-tint: #eef2f8; /* chip / action-button fill */
   --color-nimbo-blue: #2f6df0; /* the wallet's restrained primary blue */
 
-  /* ── ink / text (shared) ── */
-  --color-ink: #131a24; /* primary text */
-  --color-muted: #76839a; /* secondary text */
+  /* ── ink / text (shared) — contrast pass (iter 3): darker for projector legibility ── */
+  --color-ink: #0e141d; /* primary text — ≥7:1 on white & on cream */
+  --color-muted: #5d6b82; /* secondary text — ≥4.5:1 on white (was #76839a, too light) */
 
   /* ── fonts (wired to next/font CSS variables from layout.tsx) ── */
   --font-display: var(--font-display), "Bricolage Grotesque", sans-serif;
@@ -74,11 +74,19 @@ body {
   height: 100%;
 }
 
+/* Global type scale up (iter 3): 16px → 17.5px base so EVERY rem-based size
+   scales ~9% larger — judged on a projector, bigger reads as clearer. Arbitrary
+   px sizes in components were swept up separately to match this intent. */
+html {
+  font-size: 17.5px;
+}
+
 body {
   font-family: var(--font-body);
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  font-weight: 450;
 }
 
 /* ALL monetary figures align — tabular-nums + the mono face. Applied via the

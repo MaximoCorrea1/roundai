@@ -31,33 +31,33 @@ export function BalanceCard({
       />
       <div className="relative">
         <div className="flex items-center justify-between">
-          <span className="text-[13px] font-medium tracking-wide text-nimbo-slate">
+          <span className="text-[15px] font-semibold tracking-wide text-nimbo-slate">
             {label}
           </span>
           <button
             type="button"
             onClick={() => setHidden((v) => !v)}
             aria-label={hidden ? strings.a11y.showBalance : strings.a11y.hideBalance}
-            className="grid h-7 w-7 place-items-center rounded-full text-nimbo-slate transition-colors hover:bg-nimbo-tint"
+            className="grid h-8 w-8 place-items-center rounded-full text-nimbo-slate transition-colors hover:bg-nimbo-tint"
           >
             {hidden ? <EyeOffIcon /> : <EyeIcon />}
           </button>
         </div>
 
-        <div className="mt-2 flex items-end gap-1">
+        <div className="mt-2.5 flex items-end gap-1">
           {hidden ? (
-            <span className="text-[34px] font-semibold leading-none tracking-tight text-ink">
+            <span className="text-[42px] font-bold leading-none tracking-tight text-ink">
               ••••••
             </span>
           ) : (
-            <span className="tnum text-[34px] font-semibold leading-none tracking-tight text-ink">
+            <span className="tnum text-[42px] font-bold leading-none tracking-tight text-ink">
               {amount}
             </span>
           )}
         </div>
 
-        <div className="mt-3 flex items-center gap-1.5 text-[12px] text-nimbo-slate">
-          <span className="grid h-4 w-4 place-items-center rounded-full bg-nimbo-tint text-nimbo-slate-deep">
+        <div className="mt-3.5 flex items-center gap-1.5 text-[13.5px] font-medium text-nimbo-slate">
+          <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-nimbo-tint text-nimbo-slate-deep">
             <CardChipIcon />
           </span>
           <span>•••• 4827 · cuenta en pesos</span>

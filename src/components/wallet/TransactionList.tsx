@@ -23,7 +23,7 @@ export function TransactionList({
 }) {
   return (
     <section className="flex min-h-0 flex-1 flex-col">
-      <h2 className="mb-2 shrink-0 px-1 text-[13px] font-semibold tracking-wide text-nimbo-slate-deep">
+      <h2 className="mb-2 shrink-0 px-1 text-[17px] font-bold tracking-tight text-nimbo-slate-deep">
         {title}
       </h2>
 
@@ -44,11 +44,11 @@ export function TransactionList({
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 truncate text-[14px] font-medium leading-tight text-ink">
+                  <p className="flex items-center gap-1.5 truncate text-[15px] font-semibold leading-tight text-ink">
                     {s.tx.merchant}
                     {s.sweep > 0 && (
                       <span
-                        className="shrink-0 rounded-full bg-roundai-green px-1.5 py-[2px] text-[9px] font-semibold leading-none text-lime"
+                        className="shrink-0 rounded-full bg-roundai-green px-1.5 py-[3px] text-[11px] font-semibold leading-none text-lime"
                         aria-label={strings.payment.sweepBadge}
                       >
                         ✦
@@ -56,17 +56,17 @@ export function TransactionList({
                     )}
                   </p>
                   {s.sweep > 0 ? (
-                    <p className="tnum text-[11px] font-medium leading-tight text-lime-deep">
+                    <p className="tnum text-[13px] font-semibold leading-tight text-lime-deep">
                       {strings.payment.ledgerSweep.replace('{monto}', formatARS(s.sweep))}
                     </p>
                   ) : (
-                    <p className="text-[11.5px] capitalize leading-tight text-muted">
+                    <p className="text-[13px] font-medium capitalize leading-tight text-muted">
                       {categoryLabel(s.tx.category)}
                     </p>
                   )}
                 </div>
 
-                <span className="tnum shrink-0 text-[14px] font-semibold text-ink">
+                <span className="tnum shrink-0 text-[15px] font-bold text-ink">
                   −{formatARS(s.tx.amount)}
                 </span>
               </div>
@@ -86,15 +86,15 @@ export function TransactionList({
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-medium leading-tight text-ink">
+                  <p className="truncate text-[15px] font-semibold leading-tight text-ink">
                     {tx.merchant}
                   </p>
-                  <p className="text-[11.5px] capitalize leading-tight text-muted">
+                  <p className="text-[13px] font-medium capitalize leading-tight text-muted">
                     {categoryLabel(tx.category)}
                   </p>
                 </div>
 
-                <span className="tnum shrink-0 text-[14px] font-semibold text-ink">
+                <span className="tnum shrink-0 text-[15px] font-bold text-ink">
                   −{formatARS(tx.amount)}
                 </span>
               </div>

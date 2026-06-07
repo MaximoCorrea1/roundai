@@ -48,14 +48,14 @@ export function WalletHome({
         {/* header */}
         <header className="flex shrink-0 items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-nimbo-slate-deep font-display text-[16px] font-semibold text-white">
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-nimbo-slate-deep font-display text-[18px] font-semibold text-white">
               {initial}
             </span>
             <div>
-              <p className="text-[15px] font-semibold leading-tight text-ink">
+              <p className="text-[17px] font-bold leading-tight text-ink">
                 {greeting}
               </p>
-              <p className="text-[12px] leading-tight text-muted">
+              <p className="text-[13px] font-medium leading-tight text-muted">
                 {w.brand}
               </p>
             </div>
@@ -63,9 +63,9 @@ export function WalletHome({
           <button
             type="button"
             aria-label={strings.a11y.notifications}
-            className="relative grid h-10 w-10 place-items-center rounded-full bg-nimbo-surface text-nimbo-slate-deep shadow-[var(--shadow-card)]"
+            className="relative grid h-11 w-11 place-items-center rounded-full bg-nimbo-surface text-nimbo-slate-deep shadow-[var(--shadow-card)]"
           >
-            <svg width="19" height="19" viewBox="0 0 19 19" fill="none" aria-hidden="true">
+            <svg width="21" height="21" viewBox="0 0 19 19" fill="none" aria-hidden="true">
               <path
                 d="M9.5 2.5a4.5 4.5 0 0 0-4.5 4.5c0 4-1.5 5.5-1.5 5.5h12s-1.5-1.5-1.5-5.5A4.5 4.5 0 0 0 9.5 2.5Z"
                 stroke="currentColor"
