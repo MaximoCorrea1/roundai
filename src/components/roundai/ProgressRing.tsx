@@ -127,7 +127,7 @@ export function ProgressRing({
           <span
             aria-hidden="true"
             className={
-              'text-[15px] text-lime-deep ' + (celebrate && !reduced ? 'roundai-spark-pulse' : '')
+              'text-[16.5px] text-lime-deep ' + (celebrate && !reduced ? 'roundai-spark-pulse' : '')
             }
           >
             ✦
@@ -135,7 +135,7 @@ export function ProgressRing({
           <span className="tnum mt-0.5 font-display text-[30px] font-semibold leading-none tracking-tight text-roundai-green">
             {formatARS(accumulated)}
           </span>
-          <span className="mt-1.5 text-[10.5px] font-medium text-roundai-green/45">
+          <span className="mt-1.5 text-[12px] font-medium text-roundai-green/45">
             {strings.goal.heroCaption}
           </span>
         </div>

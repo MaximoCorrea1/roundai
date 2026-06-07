@@ -31,12 +31,12 @@ export function PortfolioCard({
           <span className="text-[13.5px] font-semibold">{data.name}</span>
         </div>
         {active && (
-          <span className="rounded-full bg-lime px-2 py-[3px] text-[9px] font-semibold uppercase leading-none tracking-wide text-roundai-green-deep">
+          <span className="rounded-full bg-lime px-2 py-[3px] text-[11px] font-semibold uppercase leading-none tracking-wide text-roundai-green-deep">
             {strings.goal.active}
           </span>
         )}
       </div>
-      <p className={'text-[11.5px] leading-snug ' + (active ? 'text-cream/75' : 'text-roundai-green/60')}>
+      <p className={'text-[14.5px] leading-snug ' + (active ? 'text-cream/75' : 'text-roundai-green/60')}>
         {data.copy}
       </p>
     </div>

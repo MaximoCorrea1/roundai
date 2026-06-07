@@ -28,7 +28,7 @@ export function OptionButtons({
           disabled={disabled}
           onClick={() => onSelect(type)}
           className={
-            'group flex items-center gap-2.5 rounded-[14px] bg-roundai-green/[0.04] px-3.5 py-3 text-left text-[14px] font-medium text-roundai-green ring-1 ring-roundai-green/[0.10] transition-all ' +
+            'group flex items-center gap-2.5 rounded-[14px] bg-roundai-green/[0.04] px-3.5 py-3 text-left text-[15.5px] font-medium text-roundai-green ring-1 ring-roundai-green/[0.10] transition-all ' +
             (disabled
               ? 'cursor-default opacity-45'
               : 'active:scale-[0.99] active:bg-roundai-green/[0.08]')

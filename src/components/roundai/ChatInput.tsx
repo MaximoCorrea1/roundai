@@ -49,7 +49,7 @@ export function ChatInput({
           placeholder={strings.miniapp.inputPlaceholder}
           aria-label={strings.miniapp.inputPlaceholder}
           className={
-            'no-scrollbar max-h-24 min-h-[24px] flex-1 resize-none border-0 bg-transparent px-2 py-1 text-[14px] leading-snug text-roundai-green outline-none placeholder:text-roundai-green/35 disabled:cursor-not-allowed ' +
+            'no-scrollbar max-h-24 min-h-[24px] flex-1 resize-none border-0 bg-transparent px-2 py-1 text-[15.5px] leading-snug text-roundai-green outline-none placeholder:text-roundai-green/35 disabled:cursor-not-allowed ' +
             (enabled ? '' : 'opacity-50')
           }
         />

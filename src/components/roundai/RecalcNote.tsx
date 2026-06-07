@@ -35,7 +35,7 @@ export function RecalcNote({ profile }: { profile: UserProfile }) {
           <path d="M11.5 1.5v2.6h-2.6M3.5 13.5v-2.6h2.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </span>
-      <p className="text-[11.5px] leading-snug text-roundai-green/65">
+      <p className="text-[14.5px] leading-snug text-roundai-green/65">
         {/* split so the two figures land in the mono face for column alignment */}
         {renderWithMono(text)}
       </p>

@@ -364,7 +364,7 @@ function ProposalBlock({
   if (!plan.hasCta) {
     return (
       <div className="flex w-full justify-start">
-        <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[14px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]">
+        <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[15.5px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]">
           {renderEmphasis(plan.text)}
         </div>
       </div>
@@ -381,7 +381,7 @@ function ProposalBlock({
     <div className="flex w-full flex-col gap-2.5 pt-1">
       {/* the proposal bubble — coach voice, margin as a tappable lime chip */}
       <div className="flex w-full justify-start">
-        <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[14px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]">
+        <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[15.5px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]">
           {renderEmphasis(before)}
           <MarginChip label={renderedCurrent} onTap={() => setOpen((v) => !v)} />
           {renderEmphasis(after)}
@@ -428,14 +428,14 @@ function MarginChip({
       <button
         type="button"
         onClick={onTap}
-        className="roundai-margin-chip inline-flex items-center gap-1 rounded-full bg-lime px-2 py-0.5 align-baseline text-[13px] font-semibold text-roundai-green-deep ring-1 ring-lime-deep/40 transition-transform active:scale-95"
+        className="roundai-margin-chip inline-flex items-center gap-1 rounded-full bg-lime px-2 py-0.5 align-baseline text-[14.5px] font-semibold text-roundai-green-deep ring-1 ring-lime-deep/40 transition-transform active:scale-95"
       >
         <style>{MARGIN_CHIP_CSS}</style>
-        <span aria-hidden="true" className="text-[10px]">
+        <span aria-hidden="true" className="text-[11.5px]">
           ✦
         </span>
         <span className="tnum">{label}</span>
-        <span className="text-[9px] font-medium text-roundai-green/60">
+        <span className="text-[11px] font-medium text-roundai-green/60">
           {strings.tweaker.chipHint}
         </span>
       </button>
@@ -478,7 +478,7 @@ function ProposalCtas({
       <button
         type="button"
         onClick={onAccept}
-        className="flex items-center gap-2 rounded-full bg-roundai-green px-5 py-2.5 text-[14px] font-semibold text-lime shadow-[0_8px_22px_-10px_rgba(7,42,32,0.6)] transition-transform active:scale-[0.98]"
+        className="flex items-center gap-2 rounded-full bg-roundai-green px-5 py-2.5 text-[15.5px] font-semibold text-lime shadow-[0_8px_22px_-10px_rgba(7,42,32,0.6)] transition-transform active:scale-[0.98]"
       >
         <span aria-hidden="true">✦</span>
         {acceptLabel}
@@ -496,7 +496,7 @@ function SecondaryCta({ label, onClick }: { label: string; onClick: () => void }
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full bg-roundai-green/[0.06] px-4 py-2.5 text-[13px] font-semibold text-roundai-green ring-1 ring-roundai-green/[0.12] transition-transform active:scale-[0.98]"
+      className="rounded-full bg-roundai-green/[0.06] px-4 py-2.5 text-[14.5px] font-semibold text-roundai-green ring-1 ring-roundai-green/[0.12] transition-transform active:scale-[0.98]"
     >
       {label}
     </button>

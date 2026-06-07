@@ -27,8 +27,8 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
       <div
         className={
           isCoach
-            ? 'max-w-[80%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[14px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]'
-            : 'max-w-[80%] rounded-[16px] rounded-br-[6px] bg-roundai-green px-3.5 py-2.5 text-[14px] leading-[1.55] text-cream shadow-[0_4px_14px_-8px_rgba(7,42,32,0.5)]'
+            ? 'max-w-[80%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[15.5px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]'
+            : 'max-w-[80%] rounded-[16px] rounded-br-[6px] bg-roundai-green px-3.5 py-2.5 text-[15.5px] leading-[1.55] text-cream shadow-[0_4px_14px_-8px_rgba(7,42,32,0.5)]'
         }
         style={{ whiteSpace: 'pre-wrap' }}
       >

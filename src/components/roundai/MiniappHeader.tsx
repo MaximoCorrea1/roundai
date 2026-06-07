@@ -56,13 +56,13 @@ export function MiniappHeader({
             <span className="font-display text-[19px] font-semibold lowercase tracking-tight text-cream">
               {m.title}
             </span>
-            <span aria-hidden="true" className="text-[14px] text-lime">
+            <span aria-hidden="true" className="text-[15.5px] text-lime">
               ✦
             </span>
           </div>
 
           {/* persistent compliance chip — small, quiet, always visible */}
-          <span className="shrink-0 rounded-full bg-cream/[0.08] px-2.5 py-1 text-[9.5px] font-medium leading-tight text-cream/55 ring-1 ring-cream/[0.08]">
+          <span className="shrink-0 rounded-full bg-cream/[0.08] px-2.5 py-1 text-[11px] font-medium leading-tight text-cream/55 ring-1 ring-cream/[0.08]">
             {m.disclaimer}
           </span>
         </div>

@@ -106,7 +106,7 @@ export function GoalScreen({
     <div className="no-scrollbar flex-1 overflow-y-auto bg-cream px-4 pb-6 pt-5">
       {/* streak chip (mocked, labeled) — near the hero */}
       <div className="mb-3 flex justify-center">
-        <span className="rounded-full bg-lime/20 px-3 py-1 text-[11px] font-semibold text-roundai-green ring-1 ring-lime-deep/30">
+        <span className="rounded-full bg-lime/20 px-3 py-1 text-[12.5px] font-semibold text-roundai-green ring-1 ring-lime-deep/30">
           {strings.goal.streak}
         </span>
       </div>
@@ -127,10 +127,10 @@ export function GoalScreen({
       {/* active goal label (post-accept): name + "recibe tus redondeos" badge */}
       {activeGoal && (
         <div className="mt-3 flex items-center justify-center gap-2">
-          <span className="font-display text-[15px] font-semibold text-roundai-green">
+          <span className="font-display text-[16.5px] font-semibold text-roundai-green">
             {activeGoal.label}
           </span>
-          <span className="rounded-full bg-lime/25 px-2 py-[3px] text-[9px] font-semibold uppercase leading-none tracking-wide text-roundai-green-deep">
+          <span className="rounded-full bg-lime/25 px-2 py-[3px] text-[11px] font-semibold uppercase leading-none tracking-wide text-roundai-green-deep">
             {isSimulatedActive ? strings.goal.simulatedBadge : strings.goal.activeBadge}
           </span>
         </div>
@@ -162,10 +162,10 @@ export function GoalScreen({
       {/* portfolio — simulated FCI sandbox, highlighted by the QUIZ result */}
       <section className="mt-6">
         <div className="mb-2.5 flex items-center justify-between px-0.5">
-          <h3 className="font-display text-[14px] font-semibold text-roundai-green">
+          <h3 className="font-display text-[15.5px] font-semibold text-roundai-green">
             {strings.goal.portfolioTitle}
           </h3>
-          <span className="rounded-full bg-roundai-green/[0.06] px-2 py-1 text-[9.5px] font-medium text-roundai-green/55">
+          <span className="rounded-full bg-roundai-green/[0.06] px-2 py-1 text-[11px] font-medium text-roundai-green/55">
             {strings.goal.sandbox}
           </span>
         </div>
@@ -213,7 +213,7 @@ function NoTargetHero({ accumulated, celebrate }: { accumulated: number; celebra
       <span className="tnum mt-1 font-display text-[36px] font-semibold leading-none tracking-tight text-roundai-green">
         {formatARS(accumulated)}
       </span>
-      <span className="mt-2 text-[11px] font-medium text-roundai-green/45">
+      <span className="mt-2 text-[12.5px] font-medium text-roundai-green/45">
         {strings.goal.heroCaption}
       </span>
     </div>

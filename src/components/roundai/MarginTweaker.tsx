@@ -74,8 +74,8 @@ export function MarginTweaker({
   return (
     <div className="flex w-full flex-col gap-3 rounded-[16px] bg-roundai-green/[0.05] p-3.5 ring-1 ring-roundai-green/[0.12]">
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-semibold text-roundai-green/70">{tw.title}</span>
-        <span aria-hidden="true" className="text-[12px] text-lime-deep">
+        <span className="text-[13.5px] font-semibold text-roundai-green/70">{tw.title}</span>
+        <span aria-hidden="true" className="text-[13.5px] text-lime-deep">
           ✦
         </span>
       </div>
@@ -130,7 +130,7 @@ export function MarginTweaker({
           />
         </div>
         <span
-          className={'text-[10.5px] font-medium ' + (overCap ? '' : 'text-roundai-green/45')}
+          className={'text-[12px] font-medium ' + (overCap ? '' : 'text-roundai-green/45')}
           style={overCap ? { color: AMBER_TEXT } : undefined}
         >
           {(overCap ? tw.overCap : tw.withinCap).replace(
@@ -143,7 +143,7 @@ export function MarginTweaker({
       <button
         type="button"
         onClick={() => onConfirm(margin)}
-        className="rounded-[12px] bg-roundai-green py-2.5 text-[14px] font-semibold text-lime transition-transform active:scale-[0.99]"
+        className="rounded-[12px] bg-roundai-green py-2.5 text-[15.5px] font-semibold text-lime transition-transform active:scale-[0.99]"
       >
         {tw.confirm}
       </button>

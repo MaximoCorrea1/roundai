@@ -29,7 +29,7 @@ export function AmountInput({
 
   return (
     <div className="flex w-full flex-col gap-2.5 rounded-[16px] bg-roundai-green/[0.04] p-3.5 ring-1 ring-roundai-green/[0.10]">
-      <label className="text-[12px] font-medium text-roundai-green/60">{a.label}</label>
+      <label className="text-[13.5px] font-medium text-roundai-green/60">{a.label}</label>
 
       {/* the masked field — big mono figure, leading $ */}
       <div className="flex items-baseline gap-1.5 rounded-[12px] bg-cream px-3 py-2.5 ring-1 ring-roundai-green/[0.12]">
@@ -76,7 +76,7 @@ export function AmountInput({
         disabled={!canConfirm}
         onClick={() => onConfirm(value)}
         className={
-          'mt-0.5 rounded-[12px] py-2.5 text-[14px] font-semibold transition-all ' +
+          'mt-0.5 rounded-[12px] py-2.5 text-[15.5px] font-semibold transition-all ' +
           (canConfirm
             ? 'bg-roundai-green text-lime active:scale-[0.99]'
             : 'bg-roundai-green/15 text-roundai-green/30')
@@ -102,7 +102,7 @@ function QuickChip({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="tnum rounded-[10px] bg-roundai-green/[0.06] py-2 text-[12px] font-semibold text-roundai-green ring-1 ring-roundai-green/[0.08] transition-all active:scale-[0.97] active:bg-roundai-green/[0.10] disabled:opacity-45"
+      className="tnum rounded-[10px] bg-roundai-green/[0.06] py-2 text-[13.5px] font-semibold text-roundai-green ring-1 ring-roundai-green/[0.08] transition-all active:scale-[0.97] active:bg-roundai-green/[0.10] disabled:opacity-45"
     >
       {label}
     </button>

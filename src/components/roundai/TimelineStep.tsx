@@ -49,7 +49,7 @@ export function TimelineStep({
           type="button"
           disabled={disabled}
           onClick={() => setCustom(true)}
-          className="rounded-[12px] bg-roundai-green/[0.04] py-2.5 text-[13px] font-semibold text-roundai-green/70 ring-1 ring-roundai-green/[0.10] transition-all active:scale-[0.99] active:bg-roundai-green/[0.08] disabled:opacity-45"
+          className="rounded-[12px] bg-roundai-green/[0.04] py-2.5 text-[14.5px] font-semibold text-roundai-green/70 ring-1 ring-roundai-green/[0.10] transition-all active:scale-[0.99] active:bg-roundai-green/[0.08] disabled:opacity-45"
         >
           {t.chips.otro}
         </button>
@@ -59,7 +59,7 @@ export function TimelineStep({
 
   return (
     <div className="flex w-full flex-col gap-2.5 rounded-[16px] bg-roundai-green/[0.04] p-3.5 ring-1 ring-roundai-green/[0.10]">
-      <label className="text-[12px] font-medium text-roundai-green/60">{t.customLabel}</label>
+      <label className="text-[13.5px] font-medium text-roundai-green/60">{t.customLabel}</label>
       <div className="flex items-baseline gap-1.5 rounded-[12px] bg-cream px-3 py-2.5 ring-1 ring-roundai-green/[0.12]">
         <input
           inputMode="numeric"
@@ -78,14 +78,14 @@ export function TimelineStep({
           aria-label={t.customLabel}
           className="tnum w-full bg-transparent text-[20px] font-semibold text-roundai-green outline-none placeholder:text-roundai-green/25"
         />
-        <span className="text-[13px] font-medium text-roundai-green/40">{t.customUnit}</span>
+        <span className="text-[14.5px] font-medium text-roundai-green/40">{t.customUnit}</span>
       </div>
       <button
         type="button"
         disabled={!canConfirm}
         onClick={() => onConfirm(months)}
         className={
-          'mt-0.5 rounded-[12px] py-2.5 text-[14px] font-semibold transition-all ' +
+          'mt-0.5 rounded-[12px] py-2.5 text-[15.5px] font-semibold transition-all ' +
           (canConfirm
             ? 'bg-roundai-green text-lime active:scale-[0.99]'
             : 'bg-roundai-green/15 text-roundai-green/30')
@@ -111,7 +111,7 @@ function Chip({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="tnum rounded-[12px] bg-roundai-green/[0.06] py-3 text-[13px] font-semibold text-roundai-green ring-1 ring-roundai-green/[0.10] transition-all active:scale-[0.97] active:bg-roundai-green/[0.10] disabled:opacity-45"
+      className="tnum rounded-[12px] bg-roundai-green/[0.06] py-3 text-[14.5px] font-semibold text-roundai-green ring-1 ring-roundai-green/[0.10] transition-all active:scale-[0.97] active:bg-roundai-green/[0.10] disabled:opacity-45"
     >
       {label}
     </button>

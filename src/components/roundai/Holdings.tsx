@@ -25,7 +25,7 @@ export function Holdings({
 }) {
   return (
     <section className="mt-6">
-      <h3 className="mb-2.5 px-0.5 font-display text-[14px] font-semibold text-roundai-green">
+      <h3 className="mb-2.5 px-0.5 font-display text-[15.5px] font-semibold text-roundai-green">
         {strings.goal.holdingsTitle}
       </h3>
 
@@ -37,7 +37,7 @@ export function Holdings({
         </div>
 
         {/* 12-month projection — conditional tense, always labeled simulado */}
-        <p className="mt-3 border-t border-roundai-green/10 pt-2.5 text-[11px] font-medium text-roundai-green/55">
+        <p className="mt-3 border-t border-roundai-green/10 pt-2.5 text-[12.5px] font-medium text-roundai-green/55">
           {strings.goal.holdingsProjection.replace('{monto}', formatARS(projection12m))}
         </p>
       </div>
@@ -50,13 +50,13 @@ function Figure({ label, value, accent }: { label: string; value: string; accent
     <div>
       <p
         className={
-          'tnum text-[15px] font-semibold leading-none ' +
+          'tnum text-[16.5px] font-semibold leading-none ' +
           (accent ? 'text-lime-deep' : 'text-roundai-green')
         }
       >
         {value}
       </p>
-      <p className="mt-1 text-[9.5px] font-medium leading-tight text-roundai-green/50">{label}</p>
+      <p className="mt-1 text-[11px] font-medium leading-tight text-roundai-green/50">{label}</p>
     </div>
   )
 }

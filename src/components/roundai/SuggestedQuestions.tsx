@@ -22,7 +22,7 @@ export function SuggestedQuestions({
 
   return (
     <div className="shrink-0 bg-cream px-3 pt-2">
-      <span className="px-1 text-[10px] font-bold uppercase tracking-[0.12em] text-roundai-green/40">
+      <span className="px-1 text-[11.5px] font-bold uppercase tracking-[0.12em] text-roundai-green/40">
         {strings.onboarding.suggestedQuestions}
       </span>
       <div className="no-scrollbar mt-1.5 flex gap-2 overflow-x-auto pb-0.5">
@@ -32,7 +32,7 @@ export function SuggestedQuestions({
             type="button"
             disabled={disabled}
             onClick={() => onPick(p)}
-            className="shrink-0 whitespace-nowrap rounded-full bg-roundai-green/[0.06] px-3 py-1.5 text-[12px] font-medium text-roundai-green ring-1 ring-roundai-green/[0.12] transition-all active:scale-[0.97] active:bg-roundai-green/[0.10] disabled:opacity-40"
+            className="shrink-0 whitespace-nowrap rounded-full bg-roundai-green/[0.06] px-3 py-1.5 text-[13.5px] font-medium text-roundai-green ring-1 ring-roundai-green/[0.12] transition-all active:scale-[0.97] active:bg-roundai-green/[0.10] disabled:opacity-40"
           >
             {p}
           </button>

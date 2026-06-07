@@ -9,7 +9,7 @@ export function StepLabel({ children }: { children: string }) {
   return (
     <div className="flex w-full items-center gap-2 pt-1">
       <span className="h-px flex-none w-3 bg-roundai-green/20" aria-hidden="true" />
-      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-roundai-green/45">
+      <span className="text-[11.5px] font-bold uppercase tracking-[0.14em] text-roundai-green/45">
         {children}
       </span>
       <span className="h-px flex-1 bg-roundai-green/[0.12]" aria-hidden="true" />
