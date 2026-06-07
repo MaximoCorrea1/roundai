@@ -20,10 +20,17 @@ import {
   savingsCapacity,
   computeOptimalMargin,
   clampMargin,
+  sweepForPayment,
   formatARS,
   formatPct,
 } from './roundup'
+import { DEMO_PAYMENT } from '../data/transactions'
 import { strings } from '../data/strings'
+
+/** The display name for a goal: the user's label if set, else the type default. */
+export function goalLabelOf(goal: Goal): string {
+  return goal.label?.trim() || strings.onboarding.goalLabels[goal.type as GoalType]
+}
 
 type PlanStatus = 'comodo' | 'ajustado' | 'inviable'
 
@@ -47,7 +54,7 @@ export interface ProposalPlan {
   capacityCapFraction: number
 }
 
-/** The es-AR rendering of the tendencies line (REAL trend data). */
+/** The es-AR rendering of the tendencies line (REAL trend data, plain words). */
 function tendenciesLine(profile: UserProfile): string {
   const p = strings.proposal
   const gasto = trendOf(profile.gastoMensualHist)
@@ -59,10 +66,29 @@ function tendenciesLine(profile: UserProfile): string {
     return f > 0 ? `+${s}` : s
   }
   return interpolate(p.tendencies, {
-    gastoDir: p.trendVerb[gasto.direction],
+    gasto: formatARS(profile.gastoMensual),
     gastoPct: pct(gasto.pct),
-    liqDir: p.trendVerbLiq[liq.direction],
     liqPct: pct(liq.pct),
+  })
+}
+
+/**
+ * The MECHANISM bubble (iteration 3): teach the round-up before the proposal so a
+ * judge understands the product. The café→sweep example uses the DEMO_PAYMENT
+ * amount and the suggested margin for this profile+goal (or the open optimum),
+ * so the number a judge sees here matches what they'll see paying the café.
+ */
+function mechanismLine(profile: UserProfile, goal: Goal, risk: RiskProfile): string {
+  const p = strings.proposal
+  const hasTarget = !!(goal.amount && goal.amount > 0 && goal.months && goal.months > 0)
+  const margin = hasTarget
+    ? planGoal(profile, risk, goal.amount!, goal.months!).marginFraction
+    : computeOptimalMargin({ ...profile, riskProfile: risk })
+  const cafe = DEMO_PAYMENT.amount
+  const sweep = margin > 0 ? sweepForPayment(cafe, margin) : 0
+  return interpolate(p.mechanism, {
+    cafe: formatARS(cafe),
+    sweep: formatARS(sweep),
   })
 }
 
@@ -114,11 +140,13 @@ export function buildProposalPlan(
   const monthly = monthlyContribution(profile, margin)
   const monthsAtMargin = monthsAtRate(amount, monthly).months
   const margen = formatPct(margin)
+  const goalLabel = goalLabelOf(goal)
   let text: string
 
   switch (plan.status) {
     case 'comodo':
       text = interpolate(p.comodo, {
+        goalLabel,
         amount: formatARS(amount),
         months: String(monthsAtMargin ?? months),
         monthly: formatARS(monthly),
@@ -128,6 +156,7 @@ export function buildProposalPlan(
       break
     case 'ajustado':
       text = interpolate(p.ajustado, {
+        goalLabel,
         months: String(months),
         required: formatARS(amount / months),
         risk: strings.onboarding.quiz.labels[risk].toLowerCase(),
@@ -137,6 +166,7 @@ export function buildProposalPlan(
       break
     case 'inviable':
       text = interpolate(p.inviable, {
+        goalLabel,
         capacity: formatARS(capacity),
         months: String(months),
         margen,
@@ -202,12 +232,18 @@ export function buildOpenPlan(
 }
 
 /**
- * The bubbles shown BEFORE the interactive proposal block: just the tendencies
- * line (decision #28). The tri-state proposal itself is rendered interactively
- * by the component (tappable margin chip + CTAs), not as a plain bubble.
+ * The bubbles shown BEFORE the interactive proposal block (iteration 3): the
+ * plain-words tendencies line (decision #28) THEN the mechanism bubble that
+ * teaches the round-up (café → sweep). The tri-state proposal itself is rendered
+ * interactively by the component (tappable margin chip + CTAs), not a bubble.
+ * One idea per bubble, ≤2 lines each.
  */
-export function buildProposalMessages(profile: UserProfile): ChatMessage[] {
-  return [assistant(tendenciesLine(profile))]
+export function buildProposalMessages(
+  profile: UserProfile,
+  goal: Goal,
+  risk: RiskProfile,
+): ChatMessage[] {
+  return [assistant(tendenciesLine(profile)), assistant(mechanismLine(profile, goal, risk))]
 }
 
 /** Does this profile+risk+goal support a proposal with a CTA at all? */
@@ -236,9 +272,12 @@ export function seedHistory(
   margin: number,
   risk: RiskProfile,
 ): ChatMessage[] {
-  // (1) synthetic USER turn — goal label + amount + plazo, rendered from strings.
-  const goalLabel = strings.onboarding.goalOptions[goal.type as GoalType]
-  const parts: string[] = [goalLabel]
+  // (1) synthetic USER turn — goal option + (its name) + amount + plazo, rendered
+  // from strings. When the user named the goal, lead with the name so the live
+  // coach can address it ("Para La compu…").
+  const goalOption = strings.onboarding.goalOptions[goal.type as GoalType]
+  const named = goal.label?.trim()
+  const parts: string[] = [named ? `${goalOption} (${named})` : goalOption]
   if (goal.amount && goal.amount > 0) parts.push(formatARS(goal.amount))
   if (goal.months && goal.months > 0) parts.push(`${goal.months} meses`)
   const userTurn = parts.join(', ')

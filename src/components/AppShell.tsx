@@ -56,6 +56,7 @@ type ChatPhase =
   | 'quiz'
   | 'goalSelect'
   | 'goalInput'
+  | 'goalName'
   | 'timeline'
   | 'proposal'
   | 'live'
@@ -103,6 +104,7 @@ export type Action =
   | { type: 'SET_RISK'; risk: RiskProfile }
   | { type: 'SELECT_GOAL'; goal: Goal; phase: ChatPhase }
   | { type: 'SET_AMOUNT'; amount: number }
+  | { type: 'SET_GOAL_LABEL'; label?: string }
   | { type: 'SET_TIMELINE'; months: number }
   | { type: 'SET_MARGIN'; marginFraction: number }
   | { type: 'ACCEPT_PROPOSAL'; marginFraction: number; savedGoal: SavedGoal }
@@ -160,10 +162,19 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, goal: action.goal, chatPhase: action.phase }
 
     case 'SET_AMOUNT':
-      // Amount captured → on to the timeline step (decision #25). NOT proposal.
+      // Amount captured → on to the OPTIONAL goal-name step (iteration 3). The
+      // name then leads into timeline (decision #25). NOT straight to proposal.
       return {
         ...state,
         goal: state.goal ? { ...state.goal, amount: action.amount } : state.goal,
+        chatPhase: 'goalName',
+      }
+
+    case 'SET_GOAL_LABEL':
+      // Optional name captured (or skipped → undefined) → on to the timeline step.
+      return {
+        ...state,
+        goal: state.goal ? { ...state.goal, label: action.label } : state.goal,
         chatPhase: 'timeline',
       }
 

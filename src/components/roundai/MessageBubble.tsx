@@ -1,5 +1,6 @@
 'use client'
 
+import { Fragment, type ReactNode } from 'react'
 import type { ChatMessage } from '@/lib/chat-types'
 
 // One chat turn. Coach turns are the roundai voice: cream type on a green-tinted
@@ -7,6 +8,10 @@ import type { ChatMessage } from '@/lib/chat-types'
 // with cream type — so the conversation reads as two clearly different speakers.
 // Money inside copy still aligns because the .tnum face is applied per-span by
 // the calculator's consumers; bubbles themselves stay text-only.
+//
+// Copy may carry lightweight *emphasis* (goal names: "Para *La compu*…") — we
+// render the asterisk-wrapped spans as a semibold accent rather than leaking the
+// raw markers. Nothing else is parsed; pre-wrap still preserves intentional breaks.
 
 export function MessageBubble({ message }: { message: ChatMessage }) {
   const isCoach = message.role === 'assistant'
@@ -27,8 +32,23 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
         }
         style={{ whiteSpace: 'pre-wrap' }}
       >
-        {message.content}
+        {renderEmphasis(message.content)}
       </div>
     </div>
   )
+}
+
+/** Render `*emphasis*` spans as semibold; leave everything else untouched. */
+export function renderEmphasis(text: string): ReactNode {
+  const parts = text.split(/(\*[^*]+\*)/g)
+  return parts.map((part, i) => {
+    if (part.length > 2 && part.startsWith('*') && part.endsWith('*')) {
+      return (
+        <span key={i} className="font-semibold">
+          {part.slice(1, -1)}
+        </span>
+      )
+    }
+    return <Fragment key={i}>{part}</Fragment>
+  })
 }

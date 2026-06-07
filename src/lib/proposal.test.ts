@@ -6,12 +6,21 @@
 import { describe, expect, test } from 'vitest'
 import {
   buildProposalPlan,
+  buildProposalMessages,
   buildOpenPlan,
+  goalLabelOf,
   seedHistory,
   hasSustainableProposal,
 } from './proposal'
 import { activeProfile } from '../data/profiles'
-import { planGoal, formatARS, formatPct, monthlyContribution } from './roundup'
+import {
+  planGoal,
+  formatARS,
+  formatPct,
+  monthlyContribution,
+  sweepForPayment,
+} from './roundup'
+import { DEMO_PAYMENT } from '../data/transactions'
 import type { RiskProfile } from './roundup'
 import type { Goal as ChatGoal } from './chat-types'
 
@@ -117,5 +126,50 @@ describe('buildOpenPlan (amount-less rendir/nose)', () => {
 describe('hasSustainableProposal', () => {
   test('true for the canonical comodo goal', () => {
     expect(hasSustainableProposal(profile, goal, risk)).toBe(true)
+  })
+})
+
+// ── iteration 3: goal name + explanative coach copy ─────────────────────────
+
+describe('goalLabelOf (iteration 3)', () => {
+  test('uses the user-given label when present', () => {
+    expect(goalLabelOf({ type: 'meta', label: 'La compu' })).toBe('La compu')
+  })
+  test('trims whitespace', () => {
+    expect(goalLabelOf({ type: 'meta', label: '  La compu  ' })).toBe('La compu')
+  })
+  test('falls back to the type default when no/blank label', () => {
+    expect(goalLabelOf({ type: 'meta' })).toBe('Mi meta')
+    expect(goalLabelOf({ type: 'ahorrar', label: '   ' })).toBe('Mi ahorro')
+  })
+})
+
+describe('proposal cites the goal by name (iteration 3)', () => {
+  test('comodo text names the goal', () => {
+    const named: ChatGoal = { type: 'meta', amount: 500_000, months: 12, label: 'La compu' }
+    const plan = buildProposalPlan(profile, named, 'moderado')
+    expect(plan.text).toContain('La compu')
+  })
+  test('seed user turn carries the goal name', () => {
+    const named: ChatGoal = { type: 'meta', amount: 500_000, months: 12, label: 'La compu' }
+    const seed = seedHistory(profile, named, margin, risk)
+    expect(seed[0].content).toContain('La compu')
+  })
+})
+
+describe('buildProposalMessages (iteration 3 — tendencies + mechanism)', () => {
+  test('emits the tendencies bubble then the mechanism bubble', () => {
+    const msgs = buildProposalMessages(profile, goal, risk)
+    expect(msgs).toHaveLength(2)
+    expect(msgs.every((m) => m.role === 'assistant')).toBe(true)
+    // tendencies cites the spend figure; mechanism teaches the café → sweep.
+    expect(msgs[0].content).toContain(formatARS(profile.gastoMensual))
+    expect(msgs[1].content).toContain(formatARS(DEMO_PAYMENT.amount))
+  })
+  test('mechanism café sweep matches the calculator at the suggested margin', () => {
+    const msgs = buildProposalMessages(profile, goal, risk)
+    const m = planGoal(profile, risk, goal.amount!, goal.months!).marginFraction
+    const sweep = formatARS(sweepForPayment(DEMO_PAYMENT.amount, m))
+    expect(msgs[1].content).toContain(sweep)
   })
 })

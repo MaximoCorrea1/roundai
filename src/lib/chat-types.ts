@@ -8,6 +8,10 @@ export interface Goal {
   type: GoalType
   amount?: number // ARS — present for 'meta' and 'ahorrar'
   months?: number // plazo chosen in the timeline step (spec decision #25)
+  // User-given name for the goal (iteration 3): optional, captured after the
+  // amount step ("ej: La compu"). Falls back to the type's default goalLabel
+  // wherever it's missing. The proposal + activated bubble cite it by name.
+  label?: string
 }
 
 /**

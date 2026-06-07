@@ -34,6 +34,17 @@ export const strings = {
     progressRing: 'Progreso hacia tu meta',
   },
   onboarding: {
+    // Tiny uppercase section labels above each interactive step's controls
+    // (iteration 3): quiet but legible orientation so a judge always knows
+    // what this step is. Rendered in the chat column, never inside a bubble.
+    stepLabels: {
+      quiz: 'Tu perfil inversor',
+      goalSelect: 'Tu meta',
+      amount: '¿Cuánto necesitás?',
+      goalName: 'Ponele nombre',
+      timeline: 'Elegí tu plazo',
+      proposal: 'Tu plan',
+    },
     goalOptions: {
       rendir: 'Quiero que mi plata rinda',
       meta: 'Quiero llegar a esta meta',
@@ -41,6 +52,7 @@ export const strings = {
       nose: 'No sé',
     },
     // Label of the SavedGoal created on accept — by goal type, never invented.
+    // Used as the FALLBACK when the user skips the optional name step.
     goalLabels: {
       rendir: 'Mi plata rindiendo',
       meta: 'Mi meta',
@@ -49,12 +61,28 @@ export const strings = {
     },
     amountPrompt: '¿De cuánto hablamos?',
     accept: 'Dale, activalo',
-    // Greeting — 2 bubbles max (copy diet, decision #33). {nombre} + the quiz
-    // intro that frames the regulatory profiling (decision #26).
+    // Optional goal-name step (iteration 3): after the amount, "ponele nombre" so
+    // the proposal + goal page can address it by name. Skippable; chips offer
+    // quick presets. The user turn echoes "Le pongo: {nombre}".
+    goalName: {
+      label: 'Dale un nombre (opcional)',
+      placeholder: 'ej: La compu',
+      confirm: 'Listo',
+      skip: 'Saltar',
+      // {nombre} → the chosen/typed name, echoed as the user turn.
+      userEcho: 'Le pongo: {nombre}',
+      chips: { compu: 'La compu', viaje: 'Un viaje', colchon: 'Mi colchón financiero' },
+    },
+    // Greeting — 3 short bubbles (copy diet, decision #33). The 3rd interpolates
+    // the user's REAL idle liquidity ({capacity} from savingsCapacity) so a judge
+    // grasps the premise: "you leave money sitting; let it work."
     greeting: {
-      hola: 'Hola {nombre} 👋 soy tu coach de roundai.',
+      hola: 'Hola {nombre} 👋 soy tu coach de roundai. Miré tus últimos 6 meses en Nimbo.',
+      // {capacity} = formatARS(savingsCapacity(profile)) — interpolated, never hardcoded.
+      premise:
+        'Cada fin de mes te quedan ~{capacity} sin usar. Esa plata puede trabajar para vos.',
       pregunta:
-        'Antes de arrancar: 3 preguntas. Por regulación, tu perfil inversor lo definís vos — no lo infiero yo.',
+        'Arranquemos con 3 preguntas: por regulación, tu perfil inversor lo definís vos.',
     },
     // Investor-profile quiz (decision #26): 3 chip questions, majority → riskProfile.
     quiz: {
@@ -104,7 +132,13 @@ export const strings = {
       quickValues: { lo: 500_000, mid: 1_000_000, hi: 2_000_000 },
     },
     // Inline confirmation bubble after the proposal is accepted (≤2 lines).
-    activated: 'Listo, lo activé ✦ Cada pago suma a tu meta. Preguntame lo que quieras.',
+    // Confirms AND teaches the next step (iteration 3 — replaces the removed
+    // judge cues). {margen} = formatPct(committed margin); {goalLabel} = goal name.
+    activated:
+      '✦ Listo: cada pago redondea {margen} a *{goalLabel}*. Probalo: volvé a la billetera y pagá el café.',
+    // Heading above the post-activation suggested-question chips (iteration 3) —
+    // judges shouldn't have to invent questions. Chips send the DEMO_PROMPTS on tap.
+    suggestedQuestions: 'Probá preguntarme',
   },
   payment: {
     payTitle: 'Pagar',
@@ -184,28 +218,38 @@ export const strings = {
   // bubble. Components never see these directly; they receive ready ChatMessages.
   proposal: {
     // (0) tendencies line — REAL data via trendOf(gastoHist) + trendOf(liquidez).
-    //     {gastoDir}/{gastoPct}/{liqDir}/{liqPct} pre-rendered in proposal.ts.
+    //     {gasto}/{gastoPct}/{liqPct} pre-rendered in proposal.ts. Plain words,
+    //     ≤2 lines: what you spend (drifting up) + that your leftover is growing.
     tendencies:
-      'Tus gastos {gastoDir} ({gastoPct}) y tu liquidez {liqDir} ({liqPct}) — esto se recalcula solo cada mes.',
+      'Gastás ~{gasto}/mes ({gastoPct}) y lo que te sobra a fin de mes viene creciendo ({liqPct}).',
     // direction verbs (criollo, ≤2 words) keyed by trendOf direction.
     trendVerb: { sube: 'suben suave', estable: 'están estables', baja: 'bajan' },
     trendVerbLiq: { sube: 'también sube', estable: 'está estable', baja: 'baja' },
-    // (A) comodo — deadline met at the floored required margin.
-    //     {amount}/{months}/{monthly}/{margen}/{capacity}
+    // (M) mechanism — taught BEFORE the proposal (iteration 3). {cafe} = café
+    //     amount; {sweep} = sweepForPayment(café, default margin). The point a
+    //     judge has to leave with: each purchase rounds an extra, no willpower.
+    //     ≤2 lines.
+    mechanism:
+      'Cada compra redondea un extra a tu meta: un café de {cafe} → {sweep}, sin que lo pienses.',
+    // (A) comodo — deadline met at the floored required margin. Pedagogical &
+    //     ≤2 lines: need/month → {margen} IS both the margin AND that share of
+    //     your spending (in comodo they're equal by construction — the chip token
+    //     is {margen}, the only percent, so the split never collides).
+    //     {goalLabel}/{amount}/{months}/{monthly}/{margen}/{capacity}
     comodo:
-      'Para {amount} en {months} meses: {monthly}/mes → margen {margen}. Entra cómodo: te sobran ~{capacity}.',
+      'Para *{goalLabel}*: {amount} en {months} meses = {monthly}/mes, el {margen} de tu gasto. Te sigue sobrando ~{capacity}.',
     // (A') comodo, no deadline ('rendir'/'nose'): sustainable open-ended plan.
     //     {margen}/{monthly}/{capacity}
     comodoOpen:
-      'Margen {margen}: ~{monthly}/mes hacia tu plata. Entra cómodo dentro de los ~{capacity} que te sobran.',
+      'Margen {margen}: ~{monthly}/mes hacia tu plata, dentro de los ~{capacity} que te sobran.',
     // (B) ajustado — capped at the risk-profile rate; deadline slips.
-    //     {months}/{required}/{risk}/{margen}/{monthsAtMargin}
+    //     {goalLabel}/{months}/{required}/{risk}/{margen}/{monthsAtMargin}
     ajustado:
-      'En {months} meses harían falta {required}/mes — más que el tope de tu perfil {risk}. A {margen} llegás en {monthsAtMargin} meses.',
+      'Para *{goalLabel}* en {months} meses harían falta {required}/mes, más que el tope de tu perfil {risk}. A {margen} llegás en {monthsAtMargin} meses.',
     // (C) inviable — even full capacity misses the deadline; honest best timeline.
-    //     {capacity}/{months}/{margen}/{monthsAtMargin}
+    //     {goalLabel}/{capacity}/{months}/{margen}/{monthsAtMargin}
     inviable:
-      'Ni usando todo tu sobrante ({capacity}/mes) llegás en {months}. A tu máximo ({margen}) son {monthsAtMargin} meses.',
+      'Para *{goalLabel}*: ni usando todo tu sobrante ({capacity}/mes) llegás en {months}. A tu máximo ({margen}) son {monthsAtMargin} meses.',
     // degenerate inviable: no sustainable margin exists at all — no CTA.
     unreachable:
       'Con tu liquidez de hoy no me da para un aporte sostenible. Arrancamos cuando tengas más aire a fin de mes — no te vendo humo.',

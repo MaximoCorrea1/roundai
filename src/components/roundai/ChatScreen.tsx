@@ -10,19 +10,25 @@ import {
   buildProposalMessages,
   buildProposalPlan,
   buildOpenPlan,
+  goalLabelOf,
   type ProposalPlan,
 } from '@/lib/proposal'
 import { useChat } from '@/lib/useChat'
 import { strings } from '@/data/strings'
+import { savingsCapacity } from '@/lib/roundup'
 import { MiniappHeader } from './MiniappHeader'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { OptionButtons } from './OptionButtons'
 import { AmountInput } from './AmountInput'
+import { GoalNameInput } from './GoalNameInput'
 import { QuizStep } from './QuizStep'
 import { TimelineStep } from './TimelineStep'
 import { MarginTweaker } from './MarginTweaker'
 import { GoalScreen } from './GoalScreen'
+import { StepLabel } from './StepLabel'
+import { SuggestedQuestions } from './SuggestedQuestions'
+import { renderEmphasis } from './MessageBubble'
 
 // The roundai miniapp surface — a visibly different world from Nimbo: warm cream
 // background, deep-green chrome, one lime accent, same phone. Composes the
@@ -64,13 +70,19 @@ export function ChatScreen({
   // so it's time to reveal the interactive proposal block.
   const [proposalReady, setProposalReady] = useState(false)
 
-  // Staggered greeting: 2 bubbles (hola + the quiz intro), then → quiz.
+  // Staggered greeting: 3 bubbles (hola + the premise w/ REAL idle liquidity +
+  // the quiz intro), then → quiz. The premise interpolates savingsCapacity so a
+  // judge grasps the product's reason for being from the chat alone.
   useEffect(() => {
     if (!active || state.messages.length > 0 || state.chatPhase !== 'greeting') return
 
     const profile = profileOf(state)
     const g = strings.onboarding.greeting
-    const bubbles = [g.hola.replace('{nombre}', profile.nombre), g.pregunta]
+    const bubbles = [
+      g.hola.replace('{nombre}', profile.nombre),
+      g.premise.replace('{capacity}', formatARS(savingsCapacity(profile))),
+      g.pregunta,
+    ]
 
     const local: ReturnType<typeof setTimeout>[] = []
     let t = 0
@@ -115,7 +127,7 @@ export function ChatScreen({
       return
     }
 
-    const bubbles = buildProposalMessages(profile)
+    const bubbles = buildProposalMessages(profile, state.goal, risk)
     const local: ReturnType<typeof setTimeout>[] = []
     let t = PROPOSAL_STEP
     bubbles.forEach((msg, i) => {
@@ -150,7 +162,22 @@ export function ChatScreen({
 
   function handleConfirmAmount(amount: number) {
     dispatch({ type: 'PUSH_MESSAGE', message: { role: 'user', content: formatARS(amount) } })
-    dispatch({ type: 'SET_AMOUNT', amount }) // → chatPhase 'timeline'
+    dispatch({ type: 'SET_AMOUNT', amount }) // → chatPhase 'goalName'
+  }
+
+  // Optional goal name: confirm echoes "Le pongo: {nombre}"; skip carries no turn.
+  function handleConfirmGoalName(label: string) {
+    dispatch({
+      type: 'PUSH_MESSAGE',
+      message: {
+        role: 'user',
+        content: strings.onboarding.goalName.userEcho.replace('{nombre}', label),
+      },
+    })
+    dispatch({ type: 'SET_GOAL_LABEL', label }) // → chatPhase 'timeline'
+  }
+  function handleSkipGoalName() {
+    dispatch({ type: 'SET_GOAL_LABEL', label: undefined }) // → chatPhase 'timeline'
   }
 
   function handleConfirmTimeline(months: number) {
@@ -169,17 +196,25 @@ export function ChatScreen({
   // Tri-state CTA: accept the proposal at the committed margin.
   function handleAccept(margin: number) {
     const goal = state.goal!
+    // The goal name carries through to the SavedGoal (wave-2 goal page shows it);
+    // falls back to the type default when the user skipped the name step.
+    const goalLabel = goalLabelOf(goal)
     const saved: SavedGoal = {
       id: `goal-${Date.now()}`,
-      label: strings.onboarding.goalLabels[goal.type as GoalType],
+      label: goalLabel,
       amount: goal.amount ?? 0,
       months: goal.months ?? 0,
       accumulated: 0,
     }
     dispatch({ type: 'ACCEPT_PROPOSAL', marginFraction: margin, savedGoal: saved })
+    // Confirm + TEACH the next step (iteration 3): cite the committed margin and
+    // the goal by name, then point the judge at the wallet to try a payment.
+    const activated = strings.onboarding.activated
+      .replace('{margen}', formatPct(margin))
+      .replace('{goalLabel}', goalLabel)
     dispatch({
       type: 'PUSH_MESSAGE',
-      message: { role: 'assistant', content: strings.onboarding.activated },
+      message: { role: 'assistant', content: activated },
     })
   }
 
@@ -205,6 +240,7 @@ export function ChatScreen({
   // the chip (decision #27: "proposal numbers re-render to match").
   const plan = proposalDone ? planFor(profile, state.goal!, risk, committed) : null
   const displayMargin = plan?.marginFraction ?? 0
+  const stepLabels = strings.onboarding.stepLabels
 
   return (
     <div className="flex h-full w-full flex-col bg-cream">
@@ -217,26 +253,63 @@ export function ChatScreen({
             showTyping={state.coachStatus === 'typing'}
             pinKey={`${state.chatPhase}:${proposalDone}:${displayMargin}`}
           >
-            {state.chatPhase === 'quiz' && <QuizStep dispatch={dispatch} />}
-            {state.chatPhase === 'goalSelect' && <OptionButtons onSelect={handleSelectGoal} />}
-            {state.chatPhase === 'goalInput' && <AmountInput onConfirm={handleConfirmAmount} />}
+            {/* Every interactive step gets a tiny uppercase section label above
+                its controls (iteration 3) so a judge always knows where they are. */}
+            {state.chatPhase === 'quiz' && (
+              <>
+                <StepLabel>{stepLabels.quiz}</StepLabel>
+                <QuizStep dispatch={dispatch} />
+              </>
+            )}
+            {state.chatPhase === 'goalSelect' && (
+              <>
+                <StepLabel>{stepLabels.goalSelect}</StepLabel>
+                <OptionButtons onSelect={handleSelectGoal} />
+              </>
+            )}
+            {state.chatPhase === 'goalInput' && (
+              <>
+                <StepLabel>{stepLabels.amount}</StepLabel>
+                <AmountInput onConfirm={handleConfirmAmount} />
+              </>
+            )}
+            {state.chatPhase === 'goalName' && (
+              <>
+                <StepLabel>{stepLabels.goalName}</StepLabel>
+                <GoalNameInput
+                  onConfirm={handleConfirmGoalName}
+                  onSkip={handleSkipGoalName}
+                />
+              </>
+            )}
             {state.chatPhase === 'timeline' && (
-              <TimelineStep onConfirm={handleConfirmTimeline} />
+              <>
+                <StepLabel>{stepLabels.timeline}</StepLabel>
+                <TimelineStep onConfirm={handleConfirmTimeline} />
+              </>
             )}
             {proposalDone && plan && (
-              <ProposalBlock
-                plan={plan}
-                displayMargin={displayMargin}
-                profile={profile}
-                risk={risk}
-                amount={state.goal?.amount}
-                onCommitMargin={handleCommitMargin}
-                onAccept={handleAccept}
-                onChangeTimeline={handleChangeTimeline}
-                onChangeGoal={handleChangeGoal}
-              />
+              <>
+                <StepLabel>{stepLabels.proposal}</StepLabel>
+                <ProposalBlock
+                  plan={plan}
+                  displayMargin={displayMargin}
+                  profile={profile}
+                  risk={risk}
+                  amount={state.goal?.amount}
+                  onCommitMargin={handleCommitMargin}
+                  onAccept={handleAccept}
+                  onChangeTimeline={handleChangeTimeline}
+                  onChangeGoal={handleChangeGoal}
+                />
+              </>
             )}
           </MessageList>
+          {/* Post-activation: tappable suggested questions so judges don't have to
+              invent them. Only while live; hidden when the coach is busy. */}
+          {isLive && (
+            <SuggestedQuestions onPick={sendMessage} disabled={!canSend} />
+          )}
           <ChatInput enabled={canSend} onSend={sendMessage} />
         </>
       ) : (
@@ -292,7 +365,7 @@ function ProposalBlock({
     return (
       <div className="flex w-full justify-start">
         <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[14px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]">
-          {plan.text}
+          {renderEmphasis(plan.text)}
         </div>
       </div>
     )
@@ -309,9 +382,9 @@ function ProposalBlock({
       {/* the proposal bubble — coach voice, margin as a tappable lime chip */}
       <div className="flex w-full justify-start">
         <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[14px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]">
-          {before}
+          {renderEmphasis(before)}
           <MarginChip label={renderedCurrent} onTap={() => setOpen((v) => !v)} />
-          {after}
+          {renderEmphasis(after)}
         </div>
       </div>
 
