@@ -6,12 +6,11 @@
 import { describe, expect, test } from 'vitest'
 import {
   buildProposalPlan,
-  buildProposalMessages,
   buildOpenPlan,
-  buildMechanismVisual,
-  buildNumbersBreakdown,
-  buildMarginAnchor,
-  buildScenariosLine,
+  buildStoryBeats,
+  buildStoryFigures,
+  buildStoryPlanBeat,
+  buildStoryChain,
   goalLabelOf,
   seedHistory,
   hasSustainableProposal,
@@ -19,10 +18,11 @@ import {
 import { profiles, activeProfile } from '../data/profiles'
 import {
   planGoal,
-  trendOf,
   scenarioMonths,
   monthsAtRate,
   savingsCapacity,
+  simulateReturns,
+  computeOptimalMargin,
   formatARS,
   formatPct,
   monthlyContribution,
@@ -166,97 +166,136 @@ describe('proposal cites the goal by name (iteration 3)', () => {
   })
 })
 
-describe('buildProposalMessages (iteration 4 — direction-aware tendencies only)', () => {
-  test('emits exactly the tendencies bubble (mechanism is now a visual card)', () => {
-    const msgs = buildProposalMessages(profile)
-    expect(msgs).toHaveLength(1)
-    expect(msgs[0].role).toBe('assistant')
-    // tendencies cites the spend figure.
-    expect(msgs[0].content).toContain(formatARS(profile.gastoMensual))
+// ── PHASE 9 · THE STORY CHAIN ────────────────────────────────────────────────
+
+describe('buildStoryBeats (PHASE 9 — the 5-beat sequential story)', () => {
+  test('comodo goal → exactly 5 ordered beats (S1–S5)', () => {
+    const beats = buildStoryBeats(profile, goal, risk)
+    expect(beats).toHaveLength(5)
+    beats.forEach((b) => expect(typeof b).toBe('string'))
+  })
+
+  test('degenerate (no sustainable margin) → a single honest beat, no story', () => {
+    // A profile with zero leftover liquidity has no sustainable margin at all.
+    const broke = { ...lu, liquidezFinDeMes: [0, 0, 0, 0, 0, 0] }
+    const beats = buildStoryBeats(broke, goal, risk)
+    expect(beats).toHaveLength(1)
+    // honest no-CTA copy — not a numbered story beat.
+    expect(beats[0]).not.toContain('Así funciona')
+    expect(buildStoryFigures(broke, goal, risk).hasStory).toBe(false)
+    expect(buildStoryChain(broke, goal, risk).hasChain).toBe(false)
+  })
+
+  test('each beat carries its load-bearing figure (margin chain, mati @ 3,5%)', () => {
+    const [s1, s2, s3, s4, s5] = buildStoryBeats(profile, goal, risk)
+    const fig = buildStoryFigures(profile, goal, risk)
+    // S1 defines the %.
+    expect(s1).toContain(fig.pct)
+    // S2: gasto → aporte.
+    expect(s2).toContain(fig.gasto)
+    expect(s2).toContain(fig.aporte)
+    // S3: liquidity breakdown (capacity, ingresos, gastos).
+    expect(s3).toContain(fig.capacity)
+    expect(s3).toContain(fig.ingresos)
+    // S4: the return (aportado12, total12, rend12 + "simulado").
+    expect(s4).toContain(fig.aportado12)
+    expect(s4).toContain(fig.total12)
+    expect(s4).toContain(fig.rend12)
+    expect(s4).toContain('simulado')
+    // S5: the plan, returns-aware, names the goal + cites both timelines.
+    expect(s5).toContain(goalLabelOf(goal))
+    expect(s5).toContain(formatARS(goal.amount!))
+  })
+
+  test('S3 trailing trend clause appears only when leftover liquidity rises', () => {
+    // mati's liquidity trends up → the clause shows.
+    const mati3 = buildStoryBeats(profile, goal, risk)[2]
+    expect(mati3).toContain('ese sobrante viene subiendo')
+    // lu's liquidity is estable → no trend clause.
+    const lu3 = buildStoryBeats(lu, { type: 'rendir' }, 'conservador')[2]
+    expect(lu3).not.toContain('ese sobrante viene subiendo')
   })
 })
 
-// ── iteration 4: direction-aware tendencies (CLIENT BUG FIX) ─────────────────
-
-describe('tendencies are DIRECTION-AWARE per series (iteration 4 bug fix)', () => {
-  test('mati (both series rising) reads "viene subiendo (+X%)" for both, no contradiction', () => {
-    const msg = buildProposalMessages(profile)[0].content
-    const gasto = trendOf(profile.gastoMensualHist)
-    const liq = trendOf(profile.liquidezFinDeMes)
-    expect(gasto.direction).toBe('sube')
-    expect(liq.direction).toBe('sube')
-    // both phrased as rising; the contradictory "viene creciendo (−1,9%)" can't occur.
-    expect(msg).toContain('viene subiendo')
-    expect(msg).not.toContain('viene bajando')
-    // closing anchor present exactly once.
-    expect(msg).toContain('comparando tus últimos meses')
-  })
-
-  test('lu (both series estable) reads "se mantiene estable" with NO percentage', () => {
-    const msg = buildProposalMessages(lu)[0].content
-    const gasto = trendOf(lu.gastoMensualHist)
-    const liq = trendOf(lu.liquidezFinDeMes)
-    expect(gasto.direction).toBe('estable')
-    expect(liq.direction).toBe('estable')
-    expect(msg).toContain('se mantiene estable')
-    // estable carries NO % — neither the +0,8% nor the −1,9% leaks in.
-    expect(msg).not.toContain('0,8%')
-    expect(msg).not.toContain('1,9%')
-    expect(msg).not.toContain('viene subiendo')
-    expect(msg).not.toContain('viene bajando')
-    expect(msg).not.toContain('viene creciendo')
-  })
-})
-
-describe('buildMechanismVisual (iteration 4 — inline split card data)', () => {
-  test('payAmount/toMerchant = café; toGoal = sweep at the suggested margin', () => {
-    const v = buildMechanismVisual(profile, goal, risk)
+describe('buildStoryFigures (PHASE 9 — shared figures, margin-reactive)', () => {
+  test('mati @ 3,5% (default plan margin) — exact ground-truth figures', () => {
+    const fig = buildStoryFigures(profile, goal, risk)
     const m = planGoal(profile, risk, goal.amount!, goal.months!).marginFraction
-    expect(v.payAmount).toBe(formatARS(DEMO_PAYMENT.amount))
-    expect(v.toMerchant).toBe(formatARS(DEMO_PAYMENT.amount))
-    expect(v.toGoal).toBe(formatARS(sweepForPayment(DEMO_PAYMENT.amount, m)))
+    const sim = simulateReturns(monthlyContribution(profile, m), 12)
+    expect(fig.pct).toBe('3,5%')
+    expect(fig.gasto).toBe(formatARS(profile.gastoMensual)) // $ 1.180.000
+    expect(fig.aporte).toBe(formatARS(monthlyContribution(profile, m))) // $ 41.667
+    expect(fig.capacity).toBe(formatARS(savingsCapacity(profile))) // $ 108.333
+    expect(fig.ingresos).toBe(formatARS(profile.ingresoMensual)) // $ 1.450.000
+    expect(fig.aportado12).toBe(formatARS(sim.aportado)) // $ 500.000
+    expect(fig.total12).toBe(formatARS(sim.total)) // $ 588.543
+    expect(fig.rend12).toBe(formatARS(sim.rendimiento)) // $ 88.543
+    expect(fig.sobranteSube).toBe(true)
+  })
+
+  test('the whole story is margin-reactive: 7% override moves every figure', () => {
+    const fig = buildStoryFigures(profile, goal, risk, 0.07)
+    const sim = simulateReturns(monthlyContribution(profile, 0.07), 12)
+    expect(fig.pct).toBe('7%')
+    expect(fig.aporte).toBe(formatARS(monthlyContribution(profile, 0.07))) // $ 82.600
+    expect(fig.aportado12).toBe(formatARS(sim.aportado)) // $ 991.200
+    expect(fig.total12).toBe(formatARS(sim.total)) // $ 1.166.727
+    expect(fig.rend12).toBe(formatARS(sim.rendimiento)) // +$ 175.527
   })
 })
 
-describe('buildNumbersBreakdown (iteration 4 — TUS NÚMEROS)', () => {
-  test('ingresos/gastos/te-queda + margin formula all calculator-derived', () => {
-    const n = buildNumbersBreakdown(profile, margin)
-    expect(n.ingresos).toBe(formatARS(profile.ingresoMensual))
-    expect(n.gastos).toBe(formatARS(profile.gastoMensual))
-    expect(n.queda).toBe(formatARS(savingsCapacity(profile)))
-    expect(n.aporte).toBe(formatARS(monthlyContribution(profile, margin)))
-    expect(n.margenPct).toBe(formatPct(margin))
-  })
-})
-
-describe('buildMarginAnchor (iteration 4 — plain-words % anchor)', () => {
-  test('reads "{pct} = de cada $ 100, {pesos} a tu meta" via sweepForPayment(100)', () => {
-    const anchor = buildMarginAnchor(margin)
-    expect(anchor).toContain(formatPct(margin))
-    expect(anchor).toContain(formatARS(100))
-    expect(anchor).toContain(formatARS(sweepForPayment(100, margin)))
-  })
-  test('margin ≤ 0 → empty (no anchor)', () => {
-    expect(buildMarginAnchor(0)).toBe('')
-  })
-})
-
-describe('buildScenariosLine (iteration 4 — returns-aware range)', () => {
-  test('mati 3,5% / $500.000 → sin 12, esperado ~11, rango 10–12', () => {
-    const line = buildScenariosLine(profile, margin, 500_000)
+describe('buildStoryPlanBeat (PHASE 9 — S5 tri-state, LEADS with esperado)', () => {
+  test('comodo: leads with the returns-aware (esperado) timeline, then sin/rango', () => {
+    const s5 = buildStoryPlanBeat(profile, goal, risk)
     const monthly = monthlyContribution(profile, margin)
     const sin = monthsAtRate(500_000, monthly).months
-    const s = scenarioMonths(monthly, 500_000)
-    expect(line).toContain(`${sin} meses`)
-    expect(line).toContain(`~${s.esperado} meses`)
-    expect(line).toContain(`${s.optimista}–${s.pesimista}`)
-    expect(line).toContain('simulado, no garantizado')
-    // ground-truth the demo figures the client called out.
+    const sc = scenarioMonths(monthly, 500_000)
+    // ground-truth (client-called figures): esperado 11, sin 12, rango 10–12.
     expect(sin).toBe(12)
-    expect(s).toEqual({ pesimista: 12, esperado: 11, optimista: 10 })
+    expect(sc).toEqual({ pesimista: 12, esperado: 11, optimista: 10 })
+    expect(s5).toContain(`~*${sc.esperado}* meses`) // the esperado leads, in bold
+    expect(s5).toContain(`${sin} sin rendimientos`)
+    expect(s5).toContain(`${sc.optimista}–${sc.pesimista}`)
+    expect(s5).toContain('simulado, no garantizado')
   })
-  test('amount ≤ 0 or margin ≤ 0 → empty', () => {
-    expect(buildScenariosLine(profile, margin, 0)).toBe('')
-    expect(buildScenariosLine(profile, 0, 500_000)).toBe('')
+
+  test('ajustado: $500.000 / 6 meses moderado → names the perfil cap + returns-aware esperado', () => {
+    const tight: ChatGoal = { type: 'meta', amount: 500_000, months: 6 }
+    const s5 = buildStoryPlanBeat(profile, tight, 'moderado')
+    expect(s5).toContain('tope de tu perfil moderado')
+    // capped at 7% → esperado scenario at that monthly.
+    const monthly = monthlyContribution(profile, 0.07)
+    const sc = scenarioMonths(monthly, 500_000)
+    expect(s5).toContain(`~*${sc.esperado}* meses`)
+  })
+
+  test('open (rendir): no deadline framing — sustainable open plan', () => {
+    const m = computeOptimalMargin({ ...profile, riskProfile: risk })
+    const s5 = buildStoryPlanBeat(profile, { type: 'rendir' }, risk)
+    expect(s5).toContain(formatPct(m))
+    expect(s5).toContain(formatARS(monthlyContribution(profile, m)))
+    expect(s5).not.toContain('sin rendimientos')
+  })
+})
+
+describe('buildStoryChain (PHASE 9 — the connected flow card)', () => {
+  test('café→sweep, gastás, invertís, 12-mo total — all from the effective margin', () => {
+    const chain = buildStoryChain(profile, goal, risk)
+    const fig = buildStoryFigures(profile, goal, risk)
+    expect(chain.hasChain).toBe(true)
+    expect(chain.roundBadge).toBe(`+${fig.pct}`)
+    expect(chain.cafeAmount).toBe(formatARS(DEMO_PAYMENT.amount))
+    expect(chain.cafeSweep).toBe(formatARS(sweepForPayment(DEMO_PAYMENT.amount, fig.margin))) // $ 154
+    expect(chain.gasto).toBe(fig.gasto)
+    expect(chain.aporte).toBe(fig.aporte)
+    expect(chain.total12).toBe(fig.total12)
+    expect(chain.returnNote).toContain(fig.rend12)
+  })
+
+  test('margin-reactive: 7% override moves the café sweep + total', () => {
+    const chain = buildStoryChain(profile, goal, risk, 0.07)
+    expect(chain.roundBadge).toBe('+7%')
+    expect(chain.cafeSweep).toBe(formatARS(sweepForPayment(DEMO_PAYMENT.amount, 0.07))) // $ 305
+    expect(chain.total12).toBe(formatARS(simulateReturns(monthlyContribution(profile, 0.07), 12).total))
   })
 })

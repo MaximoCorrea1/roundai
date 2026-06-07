@@ -22,6 +22,7 @@ import {
   computeOptimalMargin,
   clampMargin,
   sweepForPayment,
+  simulateReturns,
   formatARS,
   formatPct,
 } from './roundup'
@@ -55,150 +56,254 @@ export interface ProposalPlan {
   capacityCapFraction: number
 }
 
-/**
- * The es-AR rendering of the tendencies line (REAL trend data, plain words).
- *
- * DIRECTION-AWARE (iteration-4 bug fix): each series (spend, leftover) is phrased
- * from its OWN trendOf().direction — "viene subiendo (+X%)" / "viene bajando
- * (−X%)" / "se mantiene estable". The estable branch carries NO percentage (a
- * ±2% number beside "estable" only confuses). The percent is anchored ONCE by the
- * closing "comparando tus últimos meses" clause in the template, not per-number.
- */
-function tendenciesLine(profile: UserProfile): string {
-  const p = strings.proposal
-  const gasto = trendOf(profile.gastoMensualHist)
-  const liq = trendOf(profile.liquidezFinDeMes)
-  return interpolate(p.tendencies, {
-    gasto: formatARS(profile.gastoMensual),
-    gastoPhrase: trendPhrase(p.tendencyVerbs.gasto, gasto),
-    liqPhrase: trendPhrase(p.tendencyVerbs.liq, liq),
-  })
-}
+// ── PHASE 9 · THE STORY CHAIN ────────────────────────────────────────────────
+// The proposal phase is ONE linear story: 5 sequential beats (S1–S5) where each
+// number feeds the next, plus the StoryChainCard (a connected vertical flow that
+// IS the pitch). EVERYTHING is computed once from the EFFECTIVE margin so the
+// whole story is margin-reactive — tweak the chip and every figure moves.
 
-/** Build one direction-aware phrase: sube/baja get a signed pct; estable gets none. */
-function trendPhrase(
-  verbs: { sube: string; baja: string; estable: string },
-  trend: { direction: 'sube' | 'estable' | 'baja'; pct: number },
-): string {
-  if (trend.direction === 'estable') return verbs.estable
-  // formatPct already prefixes "-" for negatives; add "+" for the positive case.
-  const s = formatPct(trend.pct)
-  const signed = trend.pct > 0 ? `+${s}` : s
-  return verbs[trend.direction].replace('{pct}', signed)
-}
-
-/**
- * The MECHANISM bubble (iteration 3): teach the round-up before the proposal so a
- * judge understands the product. The café→sweep example uses the DEMO_PAYMENT
- * amount and the suggested margin for this profile+goal (or the open optimum),
- * so the number a judge sees here matches what they'll see paying the café.
- */
-function mechanismLine(profile: UserProfile, goal: Goal, risk: RiskProfile): string {
-  const p = strings.proposal
-  const hasTarget = !!(goal.amount && goal.amount > 0 && goal.months && goal.months > 0)
-  const margin = hasTarget
-    ? planGoal(profile, risk, goal.amount!, goal.months!).marginFraction
-    : computeOptimalMargin({ ...profile, riskProfile: risk })
-  const cafe = DEMO_PAYMENT.amount
-  const sweep = margin > 0 ? sweepForPayment(cafe, margin) : 0
-  return interpolate(p.mechanism, {
-    cafe: formatARS(cafe),
-    sweep: formatARS(sweep),
-  })
-}
-
-/**
- * Structured inputs for the inline mechanism VISUAL (iteration-4): the payment
- * row + the split into merchant + sweep. Reuses the payment split language so one
- * glance = understood. All figures calculator-derived (café amount, sweep at the
- * effective margin). The component renders the arrow/card; this hands it numbers.
- */
-export interface MechanismVisual {
-  /** café label + amount (the row at the top of the card). */
-  payAmount: string
-  /** what the merchant gets (= the café amount; the payment is unchanged). */
-  toMerchant: string
-  /** the round-up that travels to the goal (sweepForPayment at the margin). */
-  toGoal: string
-}
-
-export function buildMechanismVisual(
+/** Resolve the effective margin + tri-state for a goal (target-driven or open). */
+function resolveStoryMargin(
   profile: UserProfile,
   goal: Goal,
   risk: RiskProfile,
-): MechanismVisual {
+  overrideMargin?: number,
+): { margin: number; status: PlanStatus; hasTarget: boolean; planMargin: number } {
   const hasTarget = !!(goal.amount && goal.amount > 0 && goal.months && goal.months > 0)
-  const margin = hasTarget
-    ? planGoal(profile, risk, goal.amount!, goal.months!).marginFraction
-    : computeOptimalMargin({ ...profile, riskProfile: risk })
-  const cafe = DEMO_PAYMENT.amount
-  const sweep = margin > 0 ? sweepForPayment(cafe, margin) : 0
-  return {
-    payAmount: formatARS(cafe),
-    toMerchant: formatARS(cafe),
-    toGoal: formatARS(sweep),
+  if (hasTarget) {
+    const plan = planGoal(profile, risk, goal.amount!, goal.months!)
+    const margin =
+      overrideMargin && overrideMargin > 0 ? clampMargin(overrideMargin) : plan.marginFraction
+    return { margin, status: plan.status, hasTarget, planMargin: plan.marginFraction }
   }
+  const suggested = computeOptimalMargin({ ...profile, riskProfile: risk })
+  const margin = overrideMargin && overrideMargin > 0 ? clampMargin(overrideMargin) : suggested
+  // Open plans are always framed comodo (a sustainable open-ended habit).
+  return { margin, status: 'comodo', hasTarget, planMargin: suggested }
 }
 
-/**
- * Structured "TUS NÚMEROS" breakdown (iteration-4): ingresos − gastos → te queda,
- * plus margen = aporte ÷ gastos. ALL figures from the calculator; the component
- * renders compact tabular rows. `margin` is the effective (committed/plan) margin
- * so the aporte + percent match the proposal on screen.
- */
-export interface NumbersBreakdown {
+/** All figures the 5-beat story + the chain card cite, computed ONCE from the effective margin. */
+export interface StoryFigures {
+  /** present when the goal has a sustainable margin (a story to tell). */
+  hasStory: boolean
+  margin: number
+  pct: string
+  gasto: string
+  aporte: string
+  capacity: string
   ingresos: string
   gastos: string
-  queda: string
-  aporte: string
-  margenPct: string
+  /** true when the leftover-liquidity series trends up (S3 trailing clause). */
+  sobranteSube: boolean
+  aportado12: string
+  total12: string
+  rend12: string
 }
 
-export function buildNumbersBreakdown(profile: UserProfile, margin: number): NumbersBreakdown {
+/**
+ * Compute the shared figures for the story (S1–S4 + the chain card). All derive
+ * from the EFFECTIVE margin (override or plan/optimum), so they re-render as one
+ * when the margin is tweaked. `hasStory` is false only in the degenerate case
+ * where no sustainable margin exists at all.
+ */
+export function buildStoryFigures(
+  profile: UserProfile,
+  goal: Goal,
+  risk: RiskProfile,
+  overrideMargin?: number,
+): StoryFigures {
+  const { margin } = resolveStoryMargin(profile, goal, risk, overrideMargin)
+  if (margin <= 0) {
+    return {
+      hasStory: false,
+      margin: 0,
+      pct: '',
+      gasto: '',
+      aporte: '',
+      capacity: '',
+      ingresos: '',
+      gastos: '',
+      sobranteSube: false,
+      aportado12: '',
+      total12: '',
+      rend12: '',
+    }
+  }
+  const aporte = monthlyContribution(profile, margin)
+  const sim = simulateReturns(aporte, 12)
   return {
+    hasStory: true,
+    margin,
+    pct: formatPct(margin),
+    gasto: formatARS(profile.gastoMensual),
+    aporte: formatARS(aporte),
+    capacity: formatARS(savingsCapacity(profile)),
     ingresos: formatARS(profile.ingresoMensual),
     gastos: formatARS(profile.gastoMensual),
-    queda: formatARS(savingsCapacity(profile)),
-    aporte: formatARS(monthlyContribution(profile, margin)),
-    margenPct: formatPct(margin),
+    sobranteSube: trendOf(profile.liquidezFinDeMes).direction === 'sube',
+    aportado12: formatARS(sim.aportado),
+    total12: formatARS(sim.total),
+    rend12: formatARS(sim.rendimiento),
   }
 }
 
 /**
- * The plain-words anchor for the margin % (iteration-4 "explicá los % mejor"):
- * "{pct} = de cada $ 100 que gastás, {pesos} van a tu meta". {pesos} derives via
- * sweepForPayment(100, margin) so the anchor uses the SAME per-payment math the
- * round-up uses everywhere (no separate rounding). margin ≤ 0 → empty (no anchor).
+ * The 5-beat sequential story (S1–S5), as ordered rendered strings — paced by the
+ * ChatScreen with a typing indicator between beats. Every figure derives from the
+ * EFFECTIVE margin so a margin tweak re-renders ALL beats together. S5 is
+ * tri-state (comodo / ajustado / inviable) and LEADS with the returns-aware
+ * (esperado) timeline. Open goals (rendir/nose) drop S5's deadline framing.
+ *
+ * The degenerate no-capacity case (no sustainable margin) returns a single honest
+ * line (p.unreachable) instead of the story. Each line is ≤2 rendered lines at
+ * 393px and may carry *bold* emphasis (rendered by MessageBubble.renderEmphasis).
  */
-export function buildMarginAnchor(margin: number): string {
-  if (margin <= 0) return ''
-  return interpolate(strings.proposal.marginAnchor, {
-    pct: formatPct(margin),
-    cien: formatARS(100),
-    pesos: formatARS(sweepForPayment(100, margin)),
+export function buildStoryBeats(
+  profile: UserProfile,
+  goal: Goal,
+  risk: RiskProfile,
+  overrideMargin?: number,
+): string[] {
+  const p = strings.proposal
+  const fig = buildStoryFigures(profile, goal, risk, overrideMargin)
+  if (!fig.hasStory) return [p.unreachable]
+
+  const s = p.story
+  const s1 = interpolate(s.s1, { pct: fig.pct })
+  const s2 = interpolate(s.s2, { gasto: fig.gasto, pct: fig.pct, aporte: fig.aporte })
+  const s3 = interpolate(s.s3, {
+    capacity: fig.capacity,
+    ingresos: fig.ingresos,
+    gastos: fig.gastos,
+    sobranteTrend: fig.sobranteSube ? s.s3SobranteSube : '',
   })
+  const s4 = interpolate(s.s4, {
+    aportado12: fig.aportado12,
+    total12: fig.total12,
+    rend12: fig.rend12,
+  })
+  const s5 = buildStoryPlanBeat(profile, goal, risk, overrideMargin)
+
+  return [s1, s2, s3, s4, s5]
+}
+
+/** S5 — the closing PLAN beat: tri-state, returns-aware, leads with esperado. */
+export function buildStoryPlanBeat(
+  profile: UserProfile,
+  goal: Goal,
+  risk: RiskProfile,
+  overrideMargin?: number,
+): string {
+  const s = strings.proposal.story
+  const { margin, status, hasTarget } = resolveStoryMargin(profile, goal, risk, overrideMargin)
+  const goalLabel = goalLabelOf(goal)
+  const capacity = formatARS(savingsCapacity(profile))
+
+  // Open plan (rendir/nose): no deadline → no timeline framing.
+  if (!hasTarget) {
+    return interpolate(s.s5Open, {
+      margen: formatPct(margin),
+      aporte: formatARS(monthlyContribution(profile, margin)),
+      capacity,
+    })
+  }
+
+  const amount = goal.amount!
+  const months = goal.months!
+  const monthly = monthlyContribution(profile, margin)
+  const sin = monthsAtRate(amount, monthly).months
+  const sc = scenarioMonths(monthly, amount)
+  // Honest fallbacks when a scenario can't be reached (never NaN/Infinity on screen).
+  const mesesEsperado = sc.esperado != null ? String(sc.esperado) : (sin != null ? String(sin) : '—')
+  const mesesSin = sin != null ? String(sin) : '—'
+  const optimista = sc.optimista != null ? String(sc.optimista) : mesesEsperado
+  const pesimista = sc.pesimista != null ? String(sc.pesimista) : mesesEsperado
+
+  const shared = {
+    goalLabel,
+    amount: formatARS(amount),
+    months: String(months),
+    margen: formatPct(margin),
+    mesesEsperado,
+    mesesSin,
+    optimista,
+    pesimista,
+    capacity,
+  }
+
+  switch (status) {
+    case 'comodo':
+      return interpolate(s.s5Comodo, shared)
+    case 'ajustado':
+      return interpolate(s.s5Ajustado, {
+        ...shared,
+        required: formatARS(amount / months),
+        risk: strings.onboarding.quiz.labels[risk].toLowerCase(),
+      })
+    case 'inviable':
+      return interpolate(s.s5Inviable, shared)
+  }
 }
 
 /**
- * The SCENARIOS line (iteration-4): the proposal is an INVESTMENT, not a piggy
- * bank — show the sweep-only timeline AND the returns-aware range. {sin} =
- * monthsAtRate (flat sweep), {esperado}/{optimista}/{pesimista} =
- * scenarioMonths(monthly, amount). Returns '' for open/amount-less plans or when
- * any scenario is unreachable (no honest range to show). `margin` is the
- * effective margin; `amount` the goal target.
+ * The StoryChainCard data: a vertical connected flow that IS the pitch —
+ * compra(+pct) → gastás/mes → invertís/mes → ≈total12 (+rend). Every value
+ * pre-rendered from the EFFECTIVE margin so the card re-renders with the beats on
+ * a tweak. `hasChain` mirrors StoryFigures.hasStory.
  */
-export function buildScenariosLine(profile: UserProfile, margin: number, amount: number): string {
-  if (!(amount > 0) || margin <= 0) return ''
-  const monthly = monthlyContribution(profile, margin)
-  const sin = monthsAtRate(amount, monthly).months
-  const s = scenarioMonths(monthly, amount)
-  if (sin == null || s.esperado == null || s.optimista == null || s.pesimista == null) return ''
-  return interpolate(strings.proposal.scenarios, {
-    sin: String(sin),
-    esperado: String(s.esperado),
-    optimista: String(s.optimista),
-    pesimista: String(s.pesimista),
-  })
+export interface StoryChain {
+  hasChain: boolean
+  /** round-up badge text, e.g. "+3,5%". */
+  roundBadge: string
+  /** café example amount (DEMO_PAYMENT) + its sweep at the margin. */
+  cafeAmount: string
+  cafeSweep: string
+  /** monthly spend (the round-up base). */
+  gasto: string
+  /** monthly contribution at the margin. */
+  aporte: string
+  /** "12 meses · FCI {risk}" connector. */
+  horizon: string
+  /** the 12-month simulated total + the return delta note. */
+  total12: string
+  returnNote: string
+}
+
+export function buildStoryChain(
+  profile: UserProfile,
+  goal: Goal,
+  risk: RiskProfile,
+  overrideMargin?: number,
+): StoryChain {
+  const c = strings.proposal.chain
+  const fig = buildStoryFigures(profile, goal, risk, overrideMargin)
+  if (!fig.hasStory) {
+    return {
+      hasChain: false,
+      roundBadge: '',
+      cafeAmount: '',
+      cafeSweep: '',
+      gasto: '',
+      aporte: '',
+      horizon: '',
+      total12: '',
+      returnNote: '',
+    }
+  }
+  const cafe = DEMO_PAYMENT.amount
+  return {
+    hasChain: true,
+    roundBadge: interpolate(c.roundBadge, { pct: fig.pct }),
+    cafeAmount: formatARS(cafe),
+    cafeSweep: formatARS(sweepForPayment(cafe, fig.margin)),
+    gasto: fig.gasto,
+    aporte: fig.aporte,
+    horizon: interpolate(c.twelveMonths, {
+      risk: strings.onboarding.quiz.labels[risk].toLowerCase(),
+    }),
+    total12: fig.total12,
+    returnNote: interpolate(c.returnNote, { rend: fig.rend12 }),
+  }
 }
 
 /** Capacity cap as a fraction (savingsCapacity / gastoMensual), floored at 0. */
@@ -338,26 +443,6 @@ export function buildOpenPlan(
     hasCta: true,
     capacityCapFraction: capCap,
   }
-}
-
-/**
- * The bubble(s) shown BEFORE the interactive proposal block. Iteration-4: only
- * the plain-words, DIRECTION-AWARE tendencies line is a staged bubble now — the
- * mechanism is rendered as an inline VISUAL card (buildMechanismVisual), and the
- * TUS NÚMEROS breakdown + margin anchor + scenarios line live in the proposal
- * block. The tri-state proposal itself is rendered interactively by the component
- * (tappable margin chip + CTAs), not a bubble.
- *
- * `mechanismLine` is retained (exported via tests/coach parity) as the textual
- * fallback for the mechanism; the live UI uses the visual card.
- */
-export function buildProposalMessages(profile: UserProfile): ChatMessage[] {
-  return [assistant(tendenciesLine(profile))]
-}
-
-/** Textual mechanism line — retained for tests + as a non-visual fallback. */
-export function mechanismText(profile: UserProfile, goal: Goal, risk: RiskProfile): string {
-  return mechanismLine(profile, goal, risk)
 }
 
 /** Does this profile+risk+goal support a proposal with a CTA at all? */

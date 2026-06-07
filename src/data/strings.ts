@@ -252,6 +252,55 @@ export const strings = {
   // from roundup.ts outputs ONLY (planGoal + trendOf). Tri-state, ≤2 lines per
   // bubble. Components never see these directly; they receive ready ChatMessages.
   proposal: {
+    // ── PHASE 9 · THE STORY CHAIN ───────────────────────────────────────────
+    // The proposal phase is ONE linear story: 5 sequential beats where each
+    // number feeds the next (mechanism → spend→invest → sustainable → return →
+    // plan). Every {token} is rendered from roundup.ts in proposal.ts. ≤2 lines
+    // each at 393px. Voseo. S5 LEADS with the returns-aware (esperado) timeline.
+    story: {
+      // S1 — EL MECANISMO (defines the %). {pct} = formatPct(margin).
+      s1: 'Así funciona: cada compra que hagas se redondea un *{pct}* para arriba, y ese extra se invierte solo.',
+      // S2 — TUS GASTOS → TU INVERSIÓN. {gasto}/{pct}/{aporte}.
+      s2: 'Vos gastás en promedio *{gasto}* por mes. Redondeando ese {pct}, estarías invirtiendo *{aporte}* por mes — sin esfuerzo.',
+      // S3 — POR QUÉ ES SOSTENIBLE (liquidity breakdown + trend in ONE line).
+      // {capacity}/{ingresos}/{gastos}; {sobranteTrend} = '' or ' — y ese
+      // sobrante viene subiendo' when leftover liquidity trends up.
+      s3: 'Te lo propongo tranquilo: a fin de mes te sobran ~*{capacity}* ({ingresos} − {gastos}), así que el aporte entra cómodo{sobranteTrend}.',
+      s3SobranteSube: ' — y ese sobrante viene subiendo',
+      // S4 — EL RETORNO (no alcancía). {aportado12}/{total12}/{rend12}.
+      s4: 'Y no queda quieto: va a un FCI y rinde. En 12 meses aportás ~{aportado12} → con retorno esperado serían ~*{total12}* (+{rend12} · simulado).',
+      // S5 — EL PLAN (returns-aware, LEADS with esperado). {goalLabel}/{amount}/
+      // {mesesEsperado}/{mesesSin}/{optimista}/{pesimista}.
+      s5Comodo:
+        'Resultado: *{goalLabel}* ({amount}) la alcanzás en ~*{mesesEsperado}* meses contando retorno esperado ({mesesSin} sin rendimientos · {optimista}–{pesimista} según mercado · simulado, no garantizado).',
+      // S5 ajustado — capped at the risk-profile rate; honest about the slip,
+      // still leads with the returns-aware timeline. {goalLabel}/{months}/
+      // {required}/{risk}/{margen}/{mesesEsperado}/{mesesSin}/{optimista}/{pesimista}.
+      s5Ajustado:
+        'Resultado: para *{goalLabel}* en {months} meses harían falta {required}/mes, más que el tope de tu perfil {risk}. A {margen} la alcanzás en ~*{mesesEsperado}* meses con retorno esperado ({mesesSin} sin rendimientos · {optimista}–{pesimista} según mercado · simulado).',
+      // S5 inviable — even full capacity misses the deadline; honest best timeline.
+      // {goalLabel}/{capacity}/{months}/{margen}/{mesesEsperado}/{mesesSin}/{optimista}/{pesimista}.
+      s5Inviable:
+        'Resultado: ni usando todo tu sobrante ({capacity}/mes) *{goalLabel}* llega en {months} meses. A tu máximo ({margen}) la alcanzás en ~*{mesesEsperado}* meses con retorno esperado ({mesesSin} sin rendimientos · {optimista}–{pesimista} según mercado · simulado).',
+      // S5 open ('rendir'/'nose', no deadline): no timeline, just the sustainable
+      // open plan reframed as the closing beat. {margen}/{aporte}/{capacity}.
+      s5Open:
+        'Resultado: con un margen del *{margen}* invertís ~*{aporte}* por mes hacia tu plata, cómodo dentro de los ~{capacity} que te sobran a fin de mes.',
+    },
+    // ── THE CHAIN CARD (StoryChainCard) — labels for the connected flow ──────
+    // A vertical connected flow that IS the pitch: compra→gastás→invertís→≈total.
+    // Every value pre-rendered in proposal.ts (buildStoryChain). Labels only here.
+    chain: {
+      cafeLabel: 'café',
+      gastasLabel: 'gastás',
+      invertisLabel: 'invertís',
+      perMes: '/mes',
+      // {pct} on the round-up badge; {meses}=12, {risk}=session risk on the link.
+      roundBadge: '+{pct}',
+      twelveMonths: '12 meses · FCI {risk}',
+      // the closing total row note. {rend} = formatARS(rend12).
+      returnNote: '+{rend} · simulado',
+    },
     // (0) tendencies line — REAL data via trendOf(gastoHist) + trendOf(liquidez).
     //     DIRECTION-AWARE (iteration-4 bug fix): the spend + leftover phrases are
     //     each built from trendOf().direction in proposal.ts and slotted in here,
