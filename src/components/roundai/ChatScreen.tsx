@@ -1,33 +1,29 @@
 'use client'
 
-import { useEffect, useState, type Dispatch } from 'react'
+import { Fragment, useEffect, useState, type Dispatch } from 'react'
 import type { AppState, Action } from '@/components/AppShell'
 import type { Goal, SavedGoal } from '@/lib/chat-types'
 import type { RiskProfile, UserProfile } from '@/lib/roundup'
 import { profiles } from '@/data/profiles'
 import { formatARS, formatPct } from '@/lib/roundup'
 import {
-  buildProposalMessages,
   buildProposalPlan,
   buildOpenPlan,
+  buildStoryBeats,
+  buildStoryChain,
   goalLabelOf,
   type ProposalPlan,
+  type StoryChain,
 } from '@/lib/proposal'
 import { useChat } from '@/lib/useChat'
 import { strings } from '@/data/strings'
 import { savingsCapacity } from '@/lib/roundup'
-import {
-  buildMechanismVisual,
-  buildNumbersBreakdown,
-  buildMarginAnchor,
-  buildScenariosLine,
-} from '@/lib/proposal'
 import { MiniappHeader } from './MiniappHeader'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { GoalSelectV2 } from './GoalSelectV2'
-import { MechanismVisualCard } from './MechanismVisualCard'
-import { NumbersCard } from './NumbersCard'
+import { StoryChainCard } from './StoryChainCard'
+import { TypingIndicator } from './TypingIndicator'
 import { AmountInput } from './AmountInput'
 import { GoalNameInput } from './GoalNameInput'
 import { QuizStep } from './QuizStep'
@@ -74,9 +70,15 @@ export function ChatScreen({
   const isLive = state.chatPhase === 'live'
   const { sendMessage } = useChat(state, dispatch)
   const canSend = isLive && state.coachStatus === 'idle'
-  // Local UI flag: the proposal sequence (tendencies bubble) has fully landed,
-  // so it's time to reveal the interactive proposal block.
-  const [proposalReady, setProposalReady] = useState(false)
+  // PHASE 9 · THE STORY CHAIN. The proposal phase is ONE linear 5-beat story
+  // (S1–S5) paced with a typing indicator between beats, like the greeting. The
+  // beats are NOT frozen into message history — they're rendered live from the
+  // EFFECTIVE margin so a margin tweak re-renders the WHOLE story (one knob,
+  // every number moves). `revealedBeats` drives the staged reveal; the typing
+  // flag shows the indicator between beats. Once all 5 land, the controls (the
+  // chain card lives mid-story; the margin chip + CTAs follow) become tappable.
+  const [revealedBeats, setRevealedBeats] = useState(0)
+  const [storyTyping, setStoryTyping] = useState(false)
 
   // Staggered greeting: 3 bubbles (hola + the premise w/ REAL idle liquidity +
   // the quiz intro), then → quiz. The premise interpolates savingsCapacity so a
@@ -112,11 +114,12 @@ export function ChatScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active])
 
-  // Proposal pacing: on entering 'proposal', push the tendencies bubble (after a
-  // typing pause), commit the plan's default margin to state (so the chip/tweaker
-  // read from one source), then reveal the interactive block. Idempotent across a
-  // remount: if a tendencies bubble already follows the last user turn, just
-  // reveal the block.
+  // Proposal pacing (PHASE 9): on entering 'proposal', commit the plan's default
+  // margin once (so the chip/tweaker read from one source), then reveal the 5
+  // story beats one at a time with a typing indicator between them — same pacing
+  // as the greeting. The beats themselves are rendered live (margin-reactive),
+  // so this effect only drives the reveal COUNTER, never the text. It runs once
+  // per proposal entry (keyed on chatPhase); a margin tweak does NOT re-pace.
   useEffect(() => {
     if (state.chatPhase !== 'proposal' || !state.goal) return
 
@@ -129,27 +132,25 @@ export function ChatScreen({
       dispatch({ type: 'SET_MARGIN', marginFraction: plan.marginFraction })
     }
 
-    const last = state.messages[state.messages.length - 1]
-    if (last && last.role === 'assistant') {
-      setProposalReady(true)
-      return
-    }
+    const beatCount = buildStoryBeats(profile, state.goal, risk).length
 
-    const bubbles = buildProposalMessages(profile)
+    // Already fully revealed (remount / margin already committed this round):
+    // skip the animation and show the whole story.
+    if (revealedBeats >= beatCount) return
+
     const local: ReturnType<typeof setTimeout>[] = []
-    let t = PROPOSAL_STEP
-    bubbles.forEach((msg, i) => {
-      local.push(setTimeout(() => dispatch({ type: 'SET_STATUS', status: 'typing' }), t))
+    let t = 0
+    for (let i = 0; i < beatCount; i++) {
+      local.push(setTimeout(() => setStoryTyping(true), t))
       t += PROPOSAL_STEP
       local.push(
         setTimeout(() => {
-          dispatch({ type: 'PUSH_MESSAGE', message: msg })
-          dispatch({ type: 'SET_STATUS', status: 'idle' })
-          if (i === bubbles.length - 1) setProposalReady(true)
+          setStoryTyping(false)
+          setRevealedBeats(i + 1)
         }, t),
       )
       t += PROPOSAL_STEP
-    })
+    }
     return () => {
       for (const id of local) clearTimeout(id)
     }
@@ -242,7 +243,7 @@ export function ChatScreen({
   function handleChangeTimeline() {
     dispatch({ type: 'SET_MARGIN', marginFraction: 0 }) // sentinel; re-set on re-entry
     dispatch({ type: 'SET_PHASE', phase: 'timeline' })
-    setProposalReady(false)
+    resetStory()
   }
   function handleChangeGoal() {
     dispatch({ type: 'SET_MARGIN', marginFraction: 0 })
@@ -250,18 +251,28 @@ export function ChatScreen({
     // the goal-select surface (re-pick + re-enter the monto) rather than the
     // now-folded standalone amount step.
     dispatch({ type: 'SET_PHASE', phase: 'goalSelect' })
-    setProposalReady(false)
+    resetStory()
+  }
+
+  /** Rewind the staged story so a re-entry re-paces from S1. */
+  function resetStory() {
+    setRevealedBeats(0)
+    setStoryTyping(false)
   }
 
   const profile = profileOf(state)
   const risk = sessionRiskOf(state)
-  const proposalDone = state.chatPhase === 'proposal' && proposalReady && state.goal != null
+  const inProposal = state.chatPhase === 'proposal' && state.goal != null
   // The committed (post-tweak) margin if positive; 0 = "cleared" sentinel.
   const committed = state.marginFraction && state.marginFraction > 0 ? state.marginFraction : undefined
-  // Re-render the plan text at the committed margin so every cited figure matches
-  // the chip (decision #27: "proposal numbers re-render to match").
-  const plan = proposalDone ? planFor(profile, state.goal!, risk, committed) : null
+  // PHASE 9: the whole story re-renders at the committed margin (one knob, every
+  // number moves). Beats + chain + plan are recomputed each render from `committed`.
+  const storyBeats = inProposal ? buildStoryBeats(profile, state.goal!, risk, committed) : []
+  const storyChain = inProposal ? buildStoryChain(profile, state.goal!, risk, committed) : null
+  const plan = inProposal ? planFor(profile, state.goal!, risk, committed) : null
   const displayMargin = plan?.marginFraction ?? 0
+  // All beats have landed → reveal the interactive controls (margin chip + CTAs).
+  const storyDone = inProposal && revealedBeats >= storyBeats.length
   const stepLabels = strings.onboarding.stepLabels
 
   return (
@@ -273,7 +284,7 @@ export function ChatScreen({
           <MessageList
             messages={state.messages}
             showTyping={state.coachStatus === 'typing'}
-            pinKey={`${state.chatPhase}:${proposalDone}:${displayMargin}`}
+            pinKey={`${state.chatPhase}:${revealedBeats}:${storyTyping}:${displayMargin}`}
           >
             {/* Every interactive step gets a tiny uppercase section label above
                 its controls (iteration 3) so a judge always knows where they are. */}
@@ -316,15 +327,19 @@ export function ChatScreen({
                 <TimelineStep onConfirm={handleConfirmTimeline} />
               </>
             )}
-            {proposalDone && plan && (
+            {inProposal && plan && storyChain && (
               <>
                 <StepLabel>{stepLabels.proposal}</StepLabel>
-                <ProposalBlock
+                <StoryProposal
+                  beats={storyBeats}
+                  chain={storyChain}
+                  revealed={revealedBeats}
+                  typing={storyTyping}
+                  done={storyDone}
                   plan={plan}
                   displayMargin={displayMargin}
                   profile={profile}
                   risk={risk}
-                  goal={state.goal!}
                   amount={state.goal?.amount}
                   onCommitMargin={handleCommitMargin}
                   onAccept={handleAccept}
@@ -361,27 +376,42 @@ function planFor(
     : buildOpenPlan(profile, risk, overrideMargin)
 }
 
-// ── The interactive proposal block ──────────────────────────────────────────
-// Renders the tri-state proposal text with the margin as a TAPPABLE lime chip
-// (✦, one subtle pulse). Tapping opens the inline MarginTweaker; confirming there
-// commits the margin and the text re-renders. Below: the tri-state CTAs.
-function ProposalBlock({
+// ── PHASE 9 · THE STORY CHAIN — the interactive proposal block ───────────────
+// The proposal phase is ONE linear 5-beat story (S1–S5), revealed with typing
+// pacing. Each beat is a coach bubble; the StoryChainCard is pinned after S4 (the
+// connected flow that IS the pitch). The CLOSING beat (S5) carries the TAPPABLE
+// lime margin chip — tapping opens the inline MarginTweaker; confirming commits a
+// new margin and the WHOLE story (all beats + the chain card) re-renders (the
+// parent recomputes `beats`/`chain` at the new margin). Once every beat has
+// landed, the tri-state CTAs appear.
+//
+// Degenerate inviable (no sustainable margin) yields a single honest beat: no
+// chip, no chain, no CTA.
+function StoryProposal({
+  beats,
+  chain,
+  revealed,
+  typing,
+  done,
   plan,
   displayMargin,
   profile,
   risk,
-  goal,
   amount,
   onCommitMargin,
   onAccept,
   onChangeTimeline,
   onChangeGoal,
 }: {
+  beats: string[]
+  chain: StoryChain
+  revealed: number
+  typing: boolean
+  done: boolean
   plan: ProposalPlan
   displayMargin: number
   profile: UserProfile
   risk: RiskProfile
-  goal: Goal
   amount?: number
   onCommitMargin: (margin: number) => void
   onAccept: (margin: number) => void
@@ -389,79 +419,34 @@ function ProposalBlock({
   onChangeGoal: () => void
 }) {
   const [open, setOpen] = useState(false)
-
-  // Inline VISUAL + breakdown shown WITH the proposal (iteration-4): the
-  // mechanism split card teaches the round-up at a glance; the TUS NÚMEROS card
-  // shows the ingresos/gastos/te-queda breakdown + the margin formula. Both are
-  // calculator-derived via proposal.ts. The numbers card uses the effective
-  // (committed/plan) margin so its aporte/percent match the proposal bubble.
-  const mechVisual = buildMechanismVisual(profile, goal, risk)
-  const numbers = buildNumbersBreakdown(profile, displayMargin)
-
-  // Degenerate inviable: honest copy, NO CTA, no tappable margin. Still show the
-  // mechanism visual so the judge understands the product even without a plan.
-  if (!plan.hasCta) {
-    return (
-      <div className="flex w-full flex-col gap-2.5 pt-1">
-        <MechanismVisualCard visual={mechVisual} />
-        <div className="flex w-full justify-start">
-          <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[16.5px] leading-[1.5] text-roundai-green ring-1 ring-roundai-green/[0.06]">
-            {renderEmphasis(plan.text)}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Split the proposal text on the rendered default margin so we can swap in a
-  // tappable chip showing the CURRENT (committed/tweaked) margin.
-  const renderedDefault = formatPct(plan.marginFraction)
   const renderedCurrent = formatPct(displayMargin)
-  const [before, after] = splitOnce(plan.text, renderedDefault)
-
-  // Plain-words anchor for the % + the scenarios (returns-aware) line — both
-  // calculator-derived; scenarios is '' for open/amount-less plans.
-  const marginAnchor = buildMarginAnchor(displayMargin)
-  const scenariosLine =
-    amount && amount > 0 ? buildScenariosLine(profile, displayMargin, amount) : ''
+  const isStory = plan.hasCta // story (5 beats) vs degenerate (1 honest beat)
+  // The chain card pins right after S4 (beat index 3) lands — the payoff visual
+  // sits between the return beat and the closing plan.
+  const chainAfter = 3
+  const lastIndex = beats.length - 1
 
   return (
     <div className="flex w-full flex-col gap-2.5 pt-1">
-      {/* (1) the inline mechanism VISUAL — the killer feature at a glance */}
-      <MechanismVisualCard visual={mechVisual} />
+      {beats.slice(0, revealed).map((text, i) => {
+        const isClosing = isStory && i === lastIndex // S5 carries the margin chip
+        return (
+          <Fragment key={i}>
+            {isClosing ? (
+              <ClosingBeat text={text} marginLabel={renderedCurrent} onTapChip={() => setOpen((v) => !v)} />
+            ) : (
+              <BeatBubble text={text} />
+            )}
+            {/* pin the chain card after S4 (only in the full 5-beat story) */}
+            {isStory && i === chainAfter && <StoryChainCard chain={chain} />}
+          </Fragment>
+        )
+      })}
 
-      {/* (2) TUS NÚMEROS — the desglose the client asked for */}
-      <NumbersCard data={numbers} />
+      {typing && <TypingIndicator />}
 
-      {/* (3) the proposal bubble — coach voice, margin as a tappable lime chip */}
-      <div className="flex w-full justify-start">
-        <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[16.5px] leading-[1.5] text-roundai-green ring-1 ring-roundai-green/[0.06]">
-          {renderEmphasis(before)}
-          <MarginChip label={renderedCurrent} onTap={() => setOpen((v) => !v)} />
-          {renderEmphasis(after)}
-        </div>
-      </div>
-
-      {/* (4) plain-words anchor for the % — "de cada $ 100, $ 4 a tu meta" */}
-      {marginAnchor && (
-        <div className="flex w-full justify-start">
-          <div className="max-w-[88%] rounded-[14px] bg-lime/[0.16] px-3.5 py-2 text-[14.5px] leading-snug text-roundai-green-deep ring-1 ring-lime/30">
-            {renderEmphasis(marginAnchor)}
-          </div>
-        </div>
-      )}
-
-      {/* (5) SCENARIOS — the proposal is an investment, not a piggy bank */}
-      {scenariosLine && (
-        <div className="flex w-full justify-start">
-          <div className="max-w-[88%] rounded-[14px] bg-roundai-green/[0.05] px-3.5 py-2 text-[13.5px] leading-snug text-roundai-green/75 ring-1 ring-roundai-green/[0.08]">
-            {renderEmphasis(scenariosLine)}
-          </div>
-        </div>
-      )}
-
-      {/* inline tweaker */}
-      {open && (
+      {/* inline tweaker — opened by tapping the chip in S5 */}
+      {done && isStory && open && (
         <MarginTweaker
           profile={profile}
           risk={risk}
@@ -475,14 +460,51 @@ function ProposalBlock({
         />
       )}
 
-      {/* tri-state CTAs */}
-      <ProposalCtas
-        status={plan.status}
-        monthsAtMargin={plan.monthsAtMargin}
-        onAccept={() => onAccept(displayMargin)}
-        onChangeTimeline={onChangeTimeline}
-        onChangeGoal={onChangeGoal}
-      />
+      {/* tri-state CTAs — only once the whole story has landed and a plan exists */}
+      {done && isStory && (
+        <ProposalCtas
+          status={plan.status}
+          monthsAtMargin={plan.monthsAtMargin}
+          onAccept={() => onAccept(displayMargin)}
+          onChangeTimeline={onChangeTimeline}
+          onChangeGoal={onChangeGoal}
+        />
+      )}
+    </div>
+  )
+}
+
+/** One story beat as a coach bubble (≤2 lines at 393px; *bold* supported). */
+function BeatBubble({ text }: { text: string }) {
+  return (
+    <div className="flex w-full justify-start">
+      <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[16.5px] leading-[1.5] text-roundai-green ring-1 ring-roundai-green/[0.06]">
+        {renderEmphasis(text)}
+      </div>
+    </div>
+  )
+}
+
+/** The closing beat (S5): same bubble, but the margin % is a TAPPABLE lime chip. */
+function ClosingBeat({
+  text,
+  marginLabel,
+  onTapChip,
+}: {
+  text: string
+  marginLabel: string
+  onTapChip: () => void
+}) {
+  // Split the beat on the first occurrence of the rendered margin so the chip can
+  // replace it inline. If absent (e.g. a margin not cited verbatim), append it.
+  const [before, after] = splitOnce(text, marginLabel)
+  return (
+    <div className="flex w-full justify-start">
+      <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[16.5px] leading-[1.5] text-roundai-green ring-1 ring-roundai-green/[0.06]">
+        {renderEmphasis(before)}
+        <MarginChip label={marginLabel} onTap={onTapChip} />
+        {renderEmphasis(after)}
+      </div>
     </div>
   )
 }
