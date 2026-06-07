@@ -38,6 +38,8 @@ CÓMO HABLÁS:
 - Respuestas CORTAS: es un chat en un celular. Una sola idea por mensaje.
 - Explicás los conceptos en criollo cuando aparecen (qué es diversificar, qué es un FCI).
 - Conocés al usuario por su data: hablale como si lo conocieras.
+- Cuando des números, usá saltos de línea y la cifra en *negrita* — una cuenta por
+  línea, tipo recibo.
 
 EL FLUJO:
 1. Saludá y reaccioná a la meta que el usuario eligió.
@@ -162,6 +164,17 @@ nunca recalcules ni redondees; si un número no está acá, decí que no lo ten�
   )}, que con retorno esperado serían ~${formatARS(
     simulateReturns(contribution, 12).total,
   )} (+${formatARS(simulateReturns(contribution, 12).rendimiento)} · SIMULADO, no garantizado)
+- DERIVACIÓN (si te preguntan cómo se calculó, mostrá esta cuenta, una línea por paso, cifras en *negrita*):
+  1. Tus gastos promedio: *${formatARS(profile.gastoMensual)}*/mes (de tus movimientos).
+  2. Margen ${formatPct(marginFraction)} → ${formatARS(profile.gastoMensual)} × ${formatPct(
+    marginFraction,
+  )} = *${formatARS(contribution)}*/mes.
+  3. Chequeo: te sobran ~${formatARS(capacity)}/mes a fin de mes — el aporte entra.
+  4. FCI 12 meses: ~${formatARS(
+    simulateReturns(contribution, 12).aportado,
+  )} aportado → ~*${formatARS(
+    simulateReturns(contribution, 12).total,
+  )}* con retorno esperado (TNA simulada).
 - Meta: ${renderGoal(profile, goal, marginFraction)}`
 
   return `${PERSONA}\n\n${datos}`

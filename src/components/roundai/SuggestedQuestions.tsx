@@ -17,8 +17,10 @@ export function SuggestedQuestions({
   onPick: (text: string) => void
   disabled: boolean
 }) {
-  // Show the first 3 — keeps the strip to one tidy row group, ≤ the 4 canonical.
-  const prompts = DEMO_PROMPTS.slice(0, 3)
+  // Show the first 4 — leads with "¿Cómo lo calculaste?" (the judge question) and
+  // overflows horizontally; the strip is overflow-x-auto + each chip whitespace-nowrap
+  // + shrink-0, so any count scrolls in one tidy row without breaking layout.
+  const prompts = DEMO_PROMPTS.slice(0, 4)
 
   return (
     <div className="shrink-0 bg-cream px-3 pt-2">
