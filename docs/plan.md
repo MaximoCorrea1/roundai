@@ -575,3 +575,16 @@ Waves are dependency-ordered; each gets implementer + review. Demo-script number
 ### Task 8.F: Re-derive demo script + final review
 - [ ] Re-run demo numbers with the timeline flow (pick the rehearsal plazo), update docs/demo-script.md beats/prompts
 - [ ] Final adversarial review (demo-truth audit, regression, judge-poke) → fix → green
+
+---
+
+## Phase 9 — The Story Chain (Maximo 2026-06-07: "sigue sin ser claro — en cada compra redondeamos X% para arriba, en promedio gastás esto, entonces estarías invirtiendo esto, en 12 meses rinde esto")
+
+### Task 9.1: Replace the scattered proposal artifacts with ONE linear 5-beat story
+**Files:** ChatScreen, proposal.ts(+test), strings.ts, new StoryChainCard component, demo-transcript.ts, coach.ts(+doc)
+- [ ] After timeline: replace {tendencies line + TUS NÚMEROS card + mechanism visual + proposal + anchor + scenarios} with FIVE sequential beats, each ≤2 lines, each building on the last number, in Maximo's exact order:
+  S1 mechanism (defines the %), S2 gastos promedio → inversión/mes, S3 por qué es sostenible (liquidez breakdown + trend, one line), S4 retorno 12m ("no es una alcancía"), S5 el plan: meta en ~N meses CON retorno esperado (+ sin/rango), margin chip + CTA
+- [ ] ONE connected StoryChainCard (absorbs TUS NÚMEROS + mechanism visual): compra → ✦{pct} arriba → gastos {gasto}/mes → inversión {aporte}/mes → 12 meses FCI {perfil} → ≈{total12} (+{rend12} ✦ simulado), vertical flow with arrows
+- [ ] Margin tweak re-renders the WHOLE chain (S1 sweep, S2 aporte, S4 returns, S5 months) — one knob, every number moves together
+- [ ] Canned + live coach answers follow the same chain order
+- [ ] Verify: numbers at 3,5% and 7% hand-checked; lu sanity; tests green
