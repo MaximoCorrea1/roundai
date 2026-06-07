@@ -10,9 +10,9 @@ import { strings } from '@/data/strings'
 // competing with the device.
 //
 // This is also the demo-chrome layer (spec decision #32): a querystring profile
-// switcher (?perfil=mati|lu|fede) and a cue master switch (?guia=0). Both are
-// read server-side here and threaded into AppShell — switching is a plain <a>
-// reload, so every switch = a clean session with zero state plumbing.
+// switcher (?perfil=mati|lu|fede). It's read server-side here and threaded into
+// AppShell — switching is a plain <a> reload, so every switch = a clean session
+// with zero state plumbing.
 
 const PROFILE_IDS = ['mati', 'lu', 'fede'] as const
 type ProfileId = (typeof PROFILE_IDS)[number]
@@ -33,13 +33,8 @@ export default async function Home({
 }) {
   const sp = await searchParams
   const profileId = resolveProfileId(sp.perfil)
-  // Cue master switch: default ON; ?guia=0 disables every cue in the tree.
-  const cuesEnabled = sp.guia !== '0'
 
-  // Preserve the ?guia= flag across profile switches so a judge running cue-free
-  // doesn't get cues back when they change profile.
-  const profileHref = (id: ProfileId) =>
-    `/?perfil=${id}${cuesEnabled ? '' : '&guia=0'}`
+  const profileHref = (id: ProfileId) => `/?perfil=${id}`
 
   const d = strings.demo
 
@@ -83,7 +78,7 @@ export default async function Home({
 
       {/* the device — re-keyed on profileId so a switch fully remounts the shell */}
       <PhoneFrame>
-        <AppShell key={profileId} profileId={profileId} cuesEnabled={cuesEnabled} />
+        <AppShell key={profileId} profileId={profileId} />
       </PhoneFrame>
 
       {/* demo chrome — profile switcher (bottom-left, quiet, clearly NOT product).

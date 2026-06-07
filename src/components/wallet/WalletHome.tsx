@@ -5,8 +5,6 @@ import { transactionsFor } from '@/data/transactions'
 import { strings } from '@/data/strings'
 import { formatARS } from '@/lib/roundup'
 import type { SessionTxn } from '@/components/AppShell'
-import { useCueActive } from '@/components/AppShell'
-import { CueDot } from '@/components/CueDot'
 import { BalanceCard } from './BalanceCard'
 import { TransactionList } from './TransactionList'
 import { BottomNav } from './BottomNav'
@@ -38,8 +36,6 @@ export function WalletHome({
   const profile = profiles.find((p) => p.id === profileId) ?? profiles[0]
   const transactions = transactionsFor(profileId)
   const w = strings.wallet
-  const showTileCue = useCueActive('tile')
-  const showPayCue = useCueActive('pay')
 
   const greeting = w.greeting.replace('{nombre}', profile.nombre)
   const initial = profile.nombre.charAt(0).toUpperCase()
@@ -90,17 +86,9 @@ export function WalletHome({
 
         {/* action row */}
         <div className="grid shrink-0 grid-cols-3 gap-2.5">
-          <div className="relative">
-            <ActionButton label={w.actions.pay} onClick={onPay}>
-              <PayIcon />
-            </ActionButton>
-            {/* demo cue (decision #32): mark Pagar once roundai is live + unpaid */}
-            <CueDot
-              show={showPayCue}
-              label={strings.demo.cueLabels.pay}
-              className="absolute -right-1 -top-1"
-            />
-          </div>
+          <ActionButton label={w.actions.pay} onClick={onPay}>
+            <PayIcon />
+          </ActionButton>
           <ActionButton label={w.actions.transfer}>
             <TransferIcon />
           </ActionButton>
@@ -110,18 +98,12 @@ export function WalletHome({
         </div>
 
         {/* THE roundai tile — between balance and ledger, prominent */}
-        <div className="relative shrink-0">
+        <div className="shrink-0">
           <RoundaiTile
             title={w.roundaiTile.title}
             poweredBy={w.roundaiTile.poweredBy}
             cta={w.roundaiTile.cta}
             onOpenRoundai={onOpenRoundai}
-          />
-          {/* demo cue (decision #32): mark the entry tile before onboarding starts */}
-          <CueDot
-            show={showTileCue}
-            label={strings.demo.cueLabels.tile}
-            className="absolute right-2 top-2"
           />
         </div>
 

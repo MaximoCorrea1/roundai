@@ -6,8 +6,6 @@ import type { GoalType, Goal, SavedGoal } from '@/lib/chat-types'
 import type { RiskProfile, UserProfile } from '@/lib/roundup'
 import { profiles } from '@/data/profiles'
 import { formatARS, formatPct } from '@/lib/roundup'
-import { useCueActive } from '@/components/AppShell'
-import { CueDot } from '@/components/CueDot'
 import {
   buildProposalMessages,
   buildProposalPlan,
@@ -312,7 +310,7 @@ function ProposalBlock({
       <div className="flex w-full justify-start">
         <div className="max-w-[88%] rounded-[16px] rounded-tl-[6px] bg-roundai-green/[0.06] px-3.5 py-2.5 text-[14px] leading-[1.55] text-roundai-green ring-1 ring-roundai-green/[0.06]">
           {before}
-          <MarginChip label={renderedCurrent} onTap={() => setOpen((v) => !v)} cueHidden={open} />
+          <MarginChip label={renderedCurrent} onTap={() => setOpen((v) => !v)} />
           {after}
         </div>
       </div>
@@ -344,21 +342,16 @@ function ProposalBlock({
   )
 }
 
-// The lime, ✦, subtly-pulsing tappable margin chip (decision #27). When the demo
-// cue points here (and the tweaker isn't already open) a small pulse-dot trails
-// the chip — backdrop chrome, gated by ?guia= and nextCue(state).
+// The lime, ✦, subtly-pulsing tappable margin chip (decision #27).
 function MarginChip({
   label,
   onTap,
-  cueHidden,
 }: {
   label: string
   onTap: () => void
-  cueHidden: boolean
 }) {
-  const showCue = useCueActive('marginChip')
   return (
-    <span className="relative mx-0.5 inline-flex items-center align-baseline">
+    <span className="mx-0.5 inline-flex items-center align-baseline">
       <button
         type="button"
         onClick={onTap}
@@ -373,11 +366,6 @@ function MarginChip({
           {strings.tweaker.chipHint}
         </span>
       </button>
-      <CueDot
-        show={showCue && !cueHidden}
-        label={strings.demo.cueLabels.marginChip}
-        className="ml-1"
-      />
     </span>
   )
 }

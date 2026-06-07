@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useReducer, useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import type { Goal, ChatMessage, SavedGoal } from '@/lib/chat-types'
 import type { RiskProfile } from '@/lib/roundup'
 import type { Transaction } from '@/data/transactions'
@@ -9,7 +9,6 @@ import { ChatScreen } from '@/components/roundai/ChatScreen'
 import { PaymentSheet } from '@/components/wallet/PaymentSheet'
 import { PaymentSuccess } from '@/components/wallet/PaymentSuccess'
 import { ACTIVE_PROFILE_ID } from '@/data/profiles'
-import { nextCue, type Cue } from '@/lib/demo-cues'
 import { strings } from '@/data/strings'
 
 // A paid transaction held in-session, wrapped with the sweep it generated. We
@@ -274,32 +273,13 @@ export function appReducer(state: AppState, action: Action): AppState {
   }
 }
 
-// Demo-chrome context (spec decision #32): the cue master switch + the single
-// active cue derived from state. Provided once by AppShell so any CueDot deep in
-// the tree can ask "is this MY target the next action?" without prop-drilling.
-// cuesEnabled gates the whole thing (?guia=0 turns it off).
-export interface DemoContextValue {
-  cuesEnabled: boolean
-  activeCue: Cue | null
-}
-const DemoContext = createContext<DemoContextValue>({ cuesEnabled: false, activeCue: null })
-
-/** True iff cues are on AND `target` is the current next-action cue. */
-export function useCueActive(target: Cue): boolean {
-  const { cuesEnabled, activeCue } = useContext(DemoContext)
-  return cuesEnabled && activeCue === target
-}
-
 export function AppShell({
   profileId = ACTIVE_PROFILE_ID,
-  cuesEnabled = true,
 }: {
   profileId?: string
-  cuesEnabled?: boolean
 } = {}) {
   const [state, dispatch] = useReducer(appReducer, profileId, makeInitialState)
   const animate = useAnimateSlides()
-  const activeCue = nextCue(state)
 
   // Silent serverless pre-warm: hit /api/health once on mount so the first real
   // /api/chat call doesn't pay cold-start latency. Fire-and-forget; never blocks
@@ -319,7 +299,6 @@ export function AppShell({
     // `screen` so React remounts and re-triggers it. The animation is a paint-only
     // transform on an already-correctly-positioned box, so it never mis-positions;
     // it's also reduced-motion-safe (the keyframe is disabled in that media query).
-    <DemoContext.Provider value={{ cuesEnabled, activeCue }}>
     <div className="relative h-full w-full overflow-hidden">
       <style>{SLIDE_CSS}</style>
       <div
@@ -372,7 +351,6 @@ export function AppShell({
         </div>
       )}
     </div>
-    </DemoContext.Provider>
   )
 }
 
